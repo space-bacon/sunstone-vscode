@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import * as fs from "fs";
 import * as path from "path";
 import { Host, PageServer } from "./host";
 
@@ -35,6 +36,10 @@ export const EXCLUDE = "**/{node_modules,.git,.hg,.svn,dist,out,build,target,.ne
 // several calls under the one source, which the page's keys count on from. Only a file past the ceiling is dropped.
 const MAX_CALL_BYTES = 1536 * 1024;
 const MAX_FILE_BYTES = 24 * 1024 * 1024;
+// Past this many separately marked files, rescan the folder instead. A bulk rewrite is cheaper to
+// walk once than to re-read file by file, and the walk also catches the siblings whose watcher
+// events were dropped, which is the failure this number exists for.
+const BULK_RESCAN = 64;
 const SHARDS = 32;
 const BIG_SOURCE = 4000;
 const ROWS_PER_CALL = 2000;
@@ -86,6 +91,7 @@ export class Weave implements vscode.WebviewViewProvider, vscode.Disposable {
   // because it reads at query time; this is how the weave gets the same property.
   private readonly stale = new Set<string>();
   private readonly watchers = new Map<string, vscode.FileSystemWatcher>();
+  private readonly gitStamps = new Map<string, string>();
   private readonly disposables: vscode.Disposable[] = [];
   counts = new Map<string, number>();
   // The cap the tool path uses, as an arm. Two assessment items need sibling rows of one table to tell the answer
@@ -141,16 +147,68 @@ export class Weave implements vscode.WebviewViewProvider, vscode.Disposable {
     this.disposables.push(w);
   }
 
-  /** Bring every known-stale file back in line before a query reads from the index. Usually the set
-   * is empty and this returns immediately; while an agent is editing it holds the one or two files
-   * it has touched. A deleted file is dropped from the index rather than re-read. */
+  /** Branch and commit for a working tree, or "" when it is not a git checkout. A branch switch
+   * moves it, and unlike a watcher event a read cannot be dropped: inotify's queue overflows under
+   * a bulk rewrite and the VS Code API exposes no overflow signal to notice that it happened. */
+  private gitStamp(folder: string): string {
+    try {
+      const git = path.join(folder, ".git");
+      const head = fs.readFileSync(path.join(git, "HEAD"), "utf8").trim();
+      const m = /^ref:\s*(.+)$/.exec(head);
+      if (!m) return head;
+      const ref = m[1];
+      const loose = path.join(git, ...ref.split("/"));
+      if (fs.existsSync(loose)) return `${ref}:${fs.readFileSync(loose, "utf8").trim()}`;
+      const packed = path.join(git, "packed-refs");
+      if (fs.existsSync(packed)) {
+        for (const line of fs.readFileSync(packed, "utf8").split("\n")) {
+          const [sha, name] = line.split(" ");
+          if (name === ref) return `${ref}:${sha}`;
+        }
+      }
+      return ref;
+    } catch {
+      return "";
+    }
+  }
+
+  /** Bring every known-stale file back in line before a query reads from the index. Usually there is
+   * nothing to do. While an agent is editing it holds the one or two files it has touched; after a
+   * branch switch it rescans the folder, which stats every file and re-embeds only what moved. */
   private async freshen(): Promise<void> {
-    if (!this.stale.size || !this.isReady) return;
+    if (!this.isReady) return;
+    const rescan = new Set<string>();
+    for (const f of this.folders) {
+      const now = this.gitStamp(f);
+      if (!now) continue;
+      const was = this.gitStamps.get(f);
+      this.gitStamps.set(f, now);
+      if (was !== undefined && was !== now) {
+        rescan.add(f);
+        this.out.appendLine(`[weave] ${path.basename(f)}: working tree moved to ${now}, rescanning`);
+      }
+    }
+    if (!this.stale.size && !rescan.size) return;
     const paths = [...this.stale];
     this.stale.clear();
+    if (paths.length > BULK_RESCAN) {
+      for (const p of paths) {
+        const f = this.folders.find((x) => p.startsWith(x + path.sep));
+        if (f) rescan.add(f);
+      }
+      this.out.appendLine(`[weave] ${paths.length} files marked at once, rescanning ${rescan.size} folder(s)`);
+    }
+    for (const f of rescan) {
+      try {
+        const r = await this.indexFolder(vscode.Uri.file(f), true);
+        this.out.appendLine(`[weave] ${path.basename(f)}: rescanned, ${r.files} files, ${r.passages} passages`);
+      } catch (e: any) {
+        this.out.appendLine(`weave rescan ${f}: ${e.message || e}`);
+      }
+    }
     for (const p of paths) {
       const folder = this.folders.find((f) => p.startsWith(f + path.sep));
-      if (!folder) continue;
+      if (!folder || rescan.has(folder)) continue;
       const source = this.sourceName(folder, p);
       try {
         await vscode.workspace.fs.stat(vscode.Uri.file(p));
@@ -382,6 +440,9 @@ export class Weave implements vscode.WebviewViewProvider, vscode.Disposable {
     const present = new Set(list.map((u) => this.sourceName(folder.fsPath, u.fsPath)));
     for (const s of [...this.mtimes.keys()]) if (s.startsWith(this.sourceName(folder.fsPath) + "/") && !present.has(s)) { this.mtimes.delete(s); await this.host.bw("unindex", [s]).catch(() => 0); }
     if (!this.folders.includes(folder.fsPath)) await this.setFolders([...this.folders, folder.fsPath]);
+    // Record the tree this index was built from, so the first search after it does not read a
+    // changed stamp and rescan what was just walked.
+    this.gitStamps.set(folder.fsPath, this.gitStamp(folder.fsPath));
     // A re-weave that skipped unchanged files keeps the restored count; a fresh weave counts what it wove.
     if (skipped < list.length || !this.counts.has(folder.fsPath)) { const sources = await this.host.bw<{ source: string; passages: number }[]>("sources", []).catch(() => []); const base = this.sourceName(folder.fsPath) + "/"; this.counts.set(folder.fsPath, sources.filter((s) => s.source.startsWith(base)).reduce((a, s) => a + s.passages, 0)); }
     this.changed.fire();

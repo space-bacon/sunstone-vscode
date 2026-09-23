@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.1.2
+
+A bulk rewrite no longer depends on the watcher noticing it. Dipankar Sarkar again: `git checkout`
+can rewrite hundreds of files at once, and on Linux inotify's queue overflows and drops the events.
+He suggested rescanning when the watcher reports an overflow. The VS Code API exposes no such
+signal, `vscode.d.ts` has no mention of overflow at all, so nothing in the watcher path can know it
+happened.
+
+Freshness therefore no longer rests on events being delivered. Each search reads a generation stamp
+for every woven folder, the branch and the commit it points at, taken from `.git/HEAD` and the ref
+it resolves to. A read cannot be dropped. When the stamp moves, the folder is rescanned, and
+`indexFolder` skips files whose mtime is unchanged, so the cost is a directory walk rather than a
+re-embed. Files the new tree does not have leave the index, which the existing walk already handled.
+
+Separately, more than 64 files marked at once escalates to a folder rescan rather than 64 individual
+re-reads. That catches bulk changes with no git involved, and the siblings whose events were dropped.
+
+`npm run fresh` now runs nine checks, all passing: external write returned in 74 ms, old text gone,
+unsaved buffer's text is what search returns, deleted file drops out, branch switch returns the new
+branch's text, drops the old, and a file that exists only on the other branch leaves the index when
+you switch away.
+
+One limit on that evidence. The suite runs on macOS, where FSEvents does not overflow the way
+inotify does, so the watcher fires as well and the run confirms the outcome rather than isolating the
+stamp. The stamp exists precisely for the platform where the watcher cannot be trusted, and that
+path is unmeasured here.
+
 ## 0.1.1
 
 A search now answers from the file as it is, not as it was when something last saved it. Dipankar
