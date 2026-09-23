@@ -2,7 +2,7 @@
   "name": "sunstone",
   "displayName": "Sunstone",
   "description": "Your coding agent has your files but cannot find them. Sunstone indexes the folders you open and gives any model in the picker, Copilot's included, a proper way to search them. Your own servers can join the picker too.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "sunstonenorth",
   "author": "Sunstone North Lab LLC",
   "license": "SEE LICENSE IN LICENSE",
@@ -561,7 +561,7 @@
     ]
   },
   "scripts": {
-    "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=out/extension.js --sourcemap && esbuild test/spike.ts test/diag.ts test/m1.ts test/m2.ts test/weave.ts test/provider.ts test/bench.ts test/probe.ts test/assess.ts test/rank.ts test/select.ts test/signin.ts test/installed.ts test/run.ts --bundle --platform=node --format=cjs --external:vscode --outdir=out/test && esbuild tools/swebench_grep.ts --bundle --platform=node --format=cjs --outdir=out/tools",
+    "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=out/extension.js --sourcemap && esbuild test/spike.ts test/diag.ts test/m1.ts test/m2.ts test/weave.ts test/fresh.ts test/provider.ts test/bench.ts test/probe.ts test/assess.ts test/rank.ts test/select.ts test/signin.ts test/installed.ts test/run.ts --bundle --platform=node --format=cjs --external:vscode --outdir=out/test && esbuild tools/swebench_grep.ts --bundle --platform=node --format=cjs --outdir=out/tools",
     "sync-engine": "scripts/sync-engine.sh",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "installed": "scripts/run-installed.sh",
@@ -573,7 +573,8 @@
     "signin": "npm run build && SUNSTONE_TEST=signin SUNSTONE_KEEP_EXTENSIONS=1 SUNSTONE_WORKSPACE=${SUNSTONE_WORKSPACE:-$PWD/test/assess.code-workspace} node out/test/run.js",
     "rank": "npm run build && SUNSTONE_TEST=rank SUNSTONE_WORKSPACE=${SUNSTONE_WORKSPACE:-$PWD/test/assess.code-workspace} node out/test/run.js",
     "select": "npm run build && SUNSTONE_TEST=select SUNSTONE_WORKSPACE=${SUNSTONE_WORKSPACE:-$PWD/test/assess.code-workspace} node out/test/run.js",
-    "package": "npm run typecheck && npm run build && vsce package --out out/sunstone-$npm_package_version.vsix && scripts/check-vsix.sh out/sunstone-$npm_package_version.vsix"
+    "package": "npm run typecheck && npm run build && vsce package --out out/sunstone-$npm_package_version.vsix && scripts/check-vsix.sh out/sunstone-$npm_package_version.vsix",
+    "fresh": "npm run build && SUNSTONE_TEST=fresh node out/test/run.js"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

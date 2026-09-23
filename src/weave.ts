@@ -81,6 +81,11 @@ export class Weave implements vscode.WebviewViewProvider, vscode.Disposable {
   private readonly changed = new vscode.EventEmitter<void>();
   readonly onDidChange = this.changed.event;
   private saveTimers = new Map<string, NodeJS.Timeout>();
+  // Files known to differ from what is indexed. A search resolves this before it queries, so a hit is
+  // fresh at read time rather than only as fresh as the last save. grep has no staleness window
+  // because it reads at query time; this is how the weave gets the same property.
+  private readonly stale = new Set<string>();
+  private readonly watchers = new Map<string, vscode.FileSystemWatcher>();
   private readonly disposables: vscode.Disposable[] = [];
   counts = new Map<string, number>();
   // The cap the tool path uses, as an arm. Two assessment items need sibling rows of one table to tell the answer
@@ -96,6 +101,9 @@ export class Weave implements vscode.WebviewViewProvider, vscode.Disposable {
       if (m?.sun === "cmd" && /^sunstone\./.test(m.command)) vscode.commands.executeCommand(m.command, ...(m.args || [])).then(undefined, (e) => out.appendLine(`weave panel: ${e.message || e}`));
     });
     this.disposables.push(vscode.workspace.onDidSaveTextDocument((d) => this.onSave(d)));
+    // An unsaved buffer is already different from the file that was indexed, so mark it on the
+    // keystroke and let the next search pay for it. Marking is a Set.add; nothing is embedded here.
+    this.disposables.push(vscode.workspace.onDidChangeTextDocument((e) => this.markStale(e.document.uri)));
     this.onDidChange(() => this.publish());
   }
 
@@ -111,6 +119,56 @@ export class Weave implements vscode.WebviewViewProvider, vscode.Disposable {
 
   get folders(): string[] { return this.context.workspaceState.get<string[]>("sunstone.weave.folders") || []; }
   private setFolders(list: string[]) { return this.context.workspaceState.update("sunstone.weave.folders", list); }
+
+  /** Note that a path no longer matches its index. Cheap enough to call on every keystroke. */
+  private markStale(u: vscode.Uri): void {
+    const p = u.fsPath;
+    if (!TEXT_EXT.test(p) || ARTIFACT.test(p)) return;
+    if (!this.folders.some((f) => p.startsWith(f + path.sep))) return;
+    this.stale.add(p);
+  }
+
+  /** Watch a woven folder for writes that never reach the editor: a terminal command, a git
+   * checkout, an agent's own patch tool. onDidSaveTextDocument sees none of those, which is the
+   * case that matters while an agent is working. */
+  private watch(folder: string): void {
+    if (this.watchers.has(folder)) return;
+    const w = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, "**/*"));
+    w.onDidCreate((u) => this.markStale(u));
+    w.onDidChange((u) => this.markStale(u));
+    w.onDidDelete((u) => this.markStale(u));
+    this.watchers.set(folder, w);
+    this.disposables.push(w);
+  }
+
+  /** Bring every known-stale file back in line before a query reads from the index. Usually the set
+   * is empty and this returns immediately; while an agent is editing it holds the one or two files
+   * it has touched. A deleted file is dropped from the index rather than re-read. */
+  private async freshen(): Promise<void> {
+    if (!this.stale.size || !this.isReady) return;
+    const paths = [...this.stale];
+    this.stale.clear();
+    for (const p of paths) {
+      const folder = this.folders.find((f) => p.startsWith(f + path.sep));
+      if (!folder) continue;
+      const source = this.sourceName(folder, p);
+      try {
+        await vscode.workspace.fs.stat(vscode.Uri.file(p));
+      } catch {
+        await this.host.bw("unindex", [source], 30_000).catch(() => undefined);
+        this.mtimes.delete(source);
+        this.out.appendLine(`[weave] ${source}: gone, dropped from the index`);
+        continue;
+      }
+      try {
+        const r = await this.indexFile(vscode.Uri.file(p), vscode.Uri.file(folder), true);
+        this.out.appendLine(`[weave] ${source}: ${r.n} passages (freshened before a search)`);
+      } catch (e: any) {
+        this.out.appendLine(`weave freshen ${source}: ${e.message || e}`);
+      }
+    }
+    this.scheduleSave();
+  }
 
   resolveWebviewView(view: vscode.WebviewView): void {
     view.description = "memory";
@@ -304,6 +362,7 @@ export class Weave implements vscode.WebviewViewProvider, vscode.Disposable {
 
   async indexFolder(folder: vscode.Uri, quiet = false, force = false): Promise<{ files: number; passages: number }> {
     await this.ensure();
+    this.watch(folder.fsPath);
     // Scoped to the folder, so a repository can exclude its own files from the weave in .vscode/settings.json
     // without every other folder in the workspace inheriting the rule.
     const extra = (vscode.workspace.getConfiguration("sunstone", folder).get<string[]>("weave.exclude") || []).filter((g) => g && !g.includes(","));
@@ -382,14 +441,25 @@ export class Weave implements vscode.WebviewViewProvider, vscode.Disposable {
     }
     // Restored from the saved weave and unchanged since: nothing to do.
     if (!force && this.restored && this.mtimes.get(source) === stat.mtime) return { n: 0, skipped: true };
-    const bytes = await vscode.workspace.fs.readFile(u);
-    if (bytes.subarray(0, 4096).includes(0)) return { n: 0, skipped: false };
-    const text = Buffer.from(bytes).toString("utf8");
+      // An open buffer with unsaved edits is the file the user and the agent are both looking at, so
+      // it is the one to index. Reading from disk here would re-index the version they have already
+      // moved past, which is the stale answer this whole path exists to avoid.
+      const open = vscode.workspace.textDocuments.find((d) => d.isDirty && d.uri.fsPath === u.fsPath);
+      let text: string;
+      if (open) {
+        text = open.getText();
+      } else {
+        const bytes = await vscode.workspace.fs.readFile(u);
+        if (bytes.subarray(0, 4096).includes(0)) return { n: 0, skipped: false };
+        text = Buffer.from(bytes).toString("utf8");
+      }
     const kind = /\.(md|mdx|txt|rst|adoc|org|tex|bib)$/i.test(u.fsPath) || /(^|\/)(README|LICENSE|CHANGELOG)[^/]*$/i.test(u.fsPath) ? "text" : "code";
     await this.host.bw("unindex", [source], 30_000);
     let n = 0;
     for (const part of slices(text)) n += await this.host.bw<number>("index", [source, part, kind], 300_000);
-    this.mtimes.set(source, stat.mtime);
+      // A dirty buffer is deliberately left with the mtime of what is on disk, so the save that
+      // follows re-indexes rather than being skipped as unchanged.
+      if (!open) this.mtimes.set(source, stat.mtime);
     this.dirty.add(source);
     return { n, skipped: false };
   }
@@ -406,6 +476,7 @@ export class Weave implements vscode.WebviewViewProvider, vscode.Disposable {
    *  it is a preference and not a filter, which it was until 2026-09-17. */
   async search(query: string, k = 8, only?: string[], kind: SearchKind = "all", exclude?: string | string[], perSource = this.perSource): Promise<Hit[]> {
     await this.ensure();
+    await this.freshen();
     const want = kind === "auto" ? guessKind(query) : kind === "all" ? undefined : kind;
     const opts: any = only ? { only, ...(exclude ? { exclude } : {}) } : { exclude: exclude || ["pack:", "chat:", "tool:"] }; if (want) opts.kind = want;
     // Over-fetch and keep at most PER_SOURCE from any one source: a single long document holds enough near-duplicate

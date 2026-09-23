@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.1.1
+
+A search now answers from the file as it is, not as it was when something last saved it. Dipankar
+Sarkar put the gap plainly: grep is never stale, and an index that returns the pre-edit version of a
+function can send an agent in circles.
+
+The index was only refreshed by `onDidSaveTextDocument`, debounced 1500ms. That misses the two cases
+that matter while an agent works. An agent writing through a shell command, a patch tool or a git
+checkout never raises a save event at all, and an unsaved buffer is already different from the file
+that was indexed.
+
+Staleness is now tracked from three sources and resolved before a query rather than after a write.
+`onDidChangeTextDocument` marks a buffer on the keystroke, a `FileSystemWatcher` on each woven
+folder catches writes that never reach the editor, and `search()` re-indexes what is marked before
+it reads. Marking is a set insert; only files that actually changed are re-read, so an unchanged
+workspace pays nothing. A dirty buffer is indexed from its in-memory text rather than from disk, and
+keeps the mtime of the file on disk so the save that follows is not skipped as unchanged. A deleted
+file is dropped from the index instead of being returned as a path the agent will try to open.
+
+`npm run fresh` is the acceptance run, writing `out/test/fresh.json`. Measured on one file: a write
+from outside the editor is reflected in **75 ms**, an unsaved buffer's text is what search returns,
+and a deleted file leaves the index. The old text is gone in every case, which is the part that
+sends an agent in circles.
+
 ## 0.1.0
 
 The first published version told you nothing about weaving, which is the step everything else
