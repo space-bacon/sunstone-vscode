@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.1.0
+
+The first published version told you nothing about weaving, which is the step everything else
+depends on. Nothing is indexed until you ask, and a fresh install therefore answered out of an
+empty store while the models fell back to `grep`. Two `viewsWelcome` entries said so and neither
+could render, because welcome content only shows when a view is empty and the Places tree always
+returns its two groups. There is now a prompt on activation when the workspace has folders and the
+weave has none, offering to weave or to open the guide.
+
+`docs/GUIDE.md` ships with the extension and opens from **Sunstone: Open the Guide** or the book
+icon in the Places title bar. It covers weaving and why it comes first, the five tools, servers in
+the picker both local and remote, the window folding, the standalone page, packs, every setting
+with its default, and what to do when each part misbehaves.
+
+`extensionKind` is declared as `ui`. It was unset, and VS Code prefers `workspace` when it is, which
+in a remote window puts the extension host on the remote while the webview still resolves
+`127.0.0.1` to the local machine. For a local workspace nothing changes.
+
+The source map now ships. Every 0.0.1 build ended with a `sourceMappingURL` pointing at a file the
+package excluded, so devtools got a 404.
+
+The Licensor is named as Sunstone North Lab LLC, and the source is public at
+[space-bacon/sunstone-vscode](https://github.com/space-bacon/sunstone-vscode).
+
 ## 0.0.1
 
 First release. Requires VS Code 1.104 or later, which is the first version carrying the language model
