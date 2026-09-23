@@ -1,0 +1,36 @@
+Business Source License 1.1
+
+Parameters:
+
+  Licensor:             Burton Lancaster / Sunstone North
+  Licensed Work:        Sunstone, the VS Code extension hosting the Black Window
+                        engine and the Weave.
+  Additional Use Grant: You may use the Licensed Work for any internal purpose,
+                        including commercial development on your own or your
+                        employer's source code, with no limit on seats or users.
+                        Not granted: redistributing the Licensed Work or any
+                        derivative of it, offering it to third parties as a
+                        hosted or managed service, and embedding it or the
+                        compiled kernels it carries in a product or service you
+                        supply to others. Those require a separate commercial
+                        license.
+  Change Date:          September 15, 2030
+  Change License:       Apache License, Version 2.0
+
+For full BSL 1.1 text, see https://mariadb.com/bsl11/
+
+-----------------------------------------------------------------------
+
+Notice
+
+The Business Source License is not an Open Source license. However, the
+Licensed Work will eventually be made available under an Open Source
+License, as stated in this License.
+
+`media/` is generated rather than authored here, and it carries two licenses,
+both as recorded in blackwidow/LICENSING.md. The page and its scripts, being
+`index.html`, the `*.js` workers and the other HTML, are Apache License,
+Version 2.0, and are served unmodified at blackwindow.xyz; nothing in this
+license restricts that copy. `blackwindow_wasm_bg.wasm` is the compiled
+retrieval kernel, built from the `engine` Rust crate, and is Business Source
+License 1.1 with the same Change Date as above.

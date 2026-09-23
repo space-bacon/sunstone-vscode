@@ -1,0 +1,48 @@
+name: Bug report
+description: Something behaves differently from how it is documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a security issue, do not use this form. See SECURITY.md.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you got instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Extension version
+      description: From the Extensions view, or the version line in the Black Window output channel.
+    validations:
+      required: true
+  - type: input
+    id: vscode
+    attributes:
+      label: VS Code version and OS
+      placeholder: 1.104.0, macOS 15.2 arm64
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: The Black Window output channel
+      description: >
+        View, Output, then Black Window in the dropdown. This carries what the extension was doing.
+        Read it before you paste it, and remove anything you would rather not publish.
+      render: text
+  - type: dropdown
+    id: models
+    attributes:
+      label: Which model were you using
+      options:
+        - A model from my own server, through the Black Window provider
+        - A hosted model from the editor's picker
+        - The standalone page
+        - Not model related
+    validations:
+      required: true

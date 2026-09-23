@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="19.8 -31.6 242 242" fill="none"
+     stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+  <!-- The sunstone, cut down for 24px. The full mark in resources/icon.svg carries nine facet
+       chains; at this size they sit within a pixel of the outline and merge into a grey ring, so
+       only the two that define the table survive here. -->
+  <path d="M82.7 153 L136.4 161 L202.2 145.1 L240.9 110.3 L248.8 70.7 L229.1 35.1 L183.3 17.7
+           L125.1 17.7 L75.3 33.7 L46.5 55.5 L32.7 93.8 L47.4 123.6 Z"/>
+  <path d="M230.5 81.3 L201.7 42.5 L75.3 33.7"/>
+  <path d="M230.5 81.3 L193.4 134.2 L108.2 148.5 L55.2 100.9 L46.5 55.5"/>
+</svg>

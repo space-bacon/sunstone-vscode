@@ -1,0 +1,586 @@
+{
+  "name": "sunstone",
+  "displayName": "Sunstone",
+  "description": "The Black Window suite in VS Code: chat from your own hardware, the places a model can run, their configuration, and the tests that measure them.",
+  "version": "0.0.1",
+  "publisher": "sunstonenorth",
+  "author": "Sunstone North Lab LLC",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/space-bacon/sunstone-vscode.git"
+  },
+  "homepage": "https://blackwindow.xyz/",
+  "bugs": {
+    "url": "https://github.com/space-bacon/sunstone-vscode/issues",
+    "email": "burton@sunstonenorth.com"
+  },
+  "keywords": [
+    "llama.cpp",
+    "local llm",
+    "self-hosted",
+    "retrieval",
+    "offline"
+  ],
+  "icon": "resources/icon.png",
+  "galleryBanner": {
+    "color": "#000000",
+    "theme": "dark"
+  },
+  "engines": {
+    "vscode": "^1.104.0"
+  },
+  "categories": [
+    "AI",
+    "Chat"
+  ],
+  "extensionKind": [
+    "ui"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "sunstone.docs",
+        "title": "Sunstone: Open the Guide",
+        "icon": "$(book)"
+      },
+      {
+        "command": "sunstone.openChat",
+        "title": "Black Window: Open the Standalone Page",
+        "icon": "$(browser)"
+      },
+      {
+        "command": "sunstone.pair",
+        "title": "Sunstone: Add a Place (pairing line or server URL)",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "sunstone.removePlace",
+        "title": "Sunstone: Remove a Place"
+      },
+      {
+        "command": "sunstone.pickModel",
+        "title": "Black Window: Load a Model in the Standalone Page"
+      },
+      {
+        "command": "sunstone.askSelection",
+        "title": "Sunstone: Ask About the Selection"
+      },
+      {
+        "command": "sunstone.insertReply",
+        "title": "Sunstone: Insert the Last Reply"
+      },
+      {
+        "command": "sunstone.refreshPlaces",
+        "title": "Sunstone: Refresh Places",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "sunstone.startLocal",
+        "title": "Sunstone: Start llama-server on This Machine",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "sunstone.stopLocal",
+        "title": "Sunstone: Stop llama-server",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "sunstone.removePlaceNode",
+        "title": "Remove Place",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "sunstone.loadModel",
+        "title": "Load on the Server",
+        "icon": "$(play)"
+      },
+      {
+        "command": "sunstone.weaveFolder",
+        "title": "Black Window: Weave This Folder",
+        "icon": "$(add)"
+      },
+      {
+        "command": "sunstone.forgetFolder",
+        "title": "Black Window: Forget a Woven Folder"
+      },
+      {
+        "command": "sunstone.weaveSearch",
+        "title": "Black Window: Search the Weave",
+        "icon": "$(search)"
+      },
+      {
+        "command": "sunstone.refreshModels",
+        "title": "Sunstone: Refresh Models in the Chat Picker",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "sunstone.loadModelInPage",
+        "title": "Load in the Standalone Page",
+        "icon": "$(browser)"
+      },
+      {
+        "command": "sunstone.addModel",
+        "title": "Sunstone: Add a Model to a Box",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "sunstone.openPack",
+        "title": "Black Window: Open a Weave Pack",
+        "icon": "$(package)"
+      },
+      {
+        "command": "sunstone.savePack",
+        "title": "Black Window: Save a Weave Pack",
+        "icon": "$(save)"
+      },
+      {
+        "command": "sunstone.assess",
+        "title": "Run the assessment",
+        "category": "Sunstone"
+      },
+      {
+        "command": "sunstone.generateCodeSet",
+        "title": "Generate a retrieval set from this repository",
+        "category": "Sunstone"
+      },
+      {
+        "command": "sunstone.judge",
+        "title": "Judge assessment runs",
+        "category": "Sunstone"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "sunstone.askSelection",
+          "group": "sunstone@1"
+        },
+        {
+          "command": "sunstone.insertReply",
+          "group": "sunstone@2"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "sunstone.openChat",
+          "when": "view == sunstone.places",
+          "group": "navigation@1"
+        },
+        {
+          "command": "sunstone.pair",
+          "when": "view == sunstone.places",
+          "group": "navigation@2"
+        },
+        {
+          "command": "sunstone.refreshPlaces",
+          "when": "view == sunstone.places",
+          "group": "navigation@3"
+        },
+        {
+          "command": "sunstone.weaveFolder",
+          "when": "view == sunstone.weave",
+          "group": "navigation@1"
+        },
+        {
+          "command": "sunstone.weaveSearch",
+          "when": "view == sunstone.weave",
+          "group": "navigation@2"
+        },
+        {
+          "command": "sunstone.docs",
+          "when": "view == sunstone.places",
+          "group": "navigation@9"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "sunstone.removePlaceNode",
+          "when": "view == sunstone.places && viewItem == place",
+          "group": "inline"
+        },
+        {
+          "command": "sunstone.addModel",
+          "when": "view == sunstone.places && viewItem == place",
+          "group": "inline"
+        },
+        {
+          "command": "sunstone.startLocal",
+          "when": "view == sunstone.places && viewItem == local.stopped",
+          "group": "inline"
+        },
+        {
+          "command": "sunstone.stopLocal",
+          "when": "view == sunstone.places && viewItem == local.running",
+          "group": "inline"
+        },
+        {
+          "command": "sunstone.loadModel",
+          "when": "view == sunstone.places && viewItem == model",
+          "group": "inline"
+        },
+        {
+          "command": "sunstone.loadModelInPage",
+          "when": "view == sunstone.places && viewItem == model",
+          "group": "page@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "sunstone.removePlaceNode",
+          "when": "false"
+        },
+        {
+          "command": "sunstone.loadModel",
+          "when": "false"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "sunstone.weaveFolder",
+          "when": "explorerResourceIsFolder",
+          "group": "sunstone@1"
+        },
+        {
+          "command": "sunstone.openPack",
+          "when": "resourceFilename =~ /\\\\.pack\\\\.json$/",
+          "group": "sunstone@2"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "sunstone.askSelection",
+        "key": "ctrl+alt+b",
+        "mac": "cmd+alt+b",
+        "when": "editorTextFocus"
+      }
+    ],
+    "configuration": {
+      "title": "Sunstone",
+      "properties": {
+        "sunstone.places": {
+          "type": "array",
+          "default": [],
+          "description": "Places a model can run: OpenAI-compatible servers (a paired box, a llama-server on this machine). Keys are kept in the secret store, not here.",
+          "items": {
+            "type": "object",
+            "required": [
+              "url"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "enabled": {
+                "type": "boolean",
+                "default": true
+              }
+            }
+          }
+        },
+        "sunstone.model": {
+          "type": "string",
+          "default": "",
+          "description": "The model to load when the chat opens: a catalog tile id (remote:<url>|<model>) or a model name on a place."
+        },
+        "sunstone.port": {
+          "type": "number",
+          "default": 47393,
+          "description": "Loopback port the chat page is served on (127.0.0.1 only). Keep it stable: the page's caches of model weights and its settings belong to that origin."
+        },
+        "sunstone.local.llamaServer": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the llama-server binary. Empty: PATH, then /opt/homebrew/bin and /usr/local/bin."
+        },
+        "sunstone.weave.exclude": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Globs kept out of the weave, on top of the built-in list (node_modules, .git, .venv*, build output, caches). A repository's results or datasets belong here: [\"**/artifacts/**\", \"**/data/**\"].",
+          "scope": "resource"
+        },
+        "sunstone.local.modelDirs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Directories scanned for .gguf files (3 levels deep). Empty: the Black Window app's models folder, ~/.cache/llama.cpp, ~/models."
+        },
+        "sunstone.local.port": {
+          "type": "number",
+          "default": 8083,
+          "description": "Port for the llama-server Sunstone starts (127.0.0.1 only, keyed)."
+        },
+        "sunstone.local.ctx": {
+          "type": "number",
+          "default": 32768,
+          "description": "Largest context window models the local llama-server loads may take. Each model gets what memory allows after its weights, from the KV cost in its GGUF header, capped by this and by what it was trained for."
+        },
+        "sunstone.digestModel": {
+          "type": "string",
+          "default": "",
+          "description": "Model used by the digest tool (substring of a model id, name, family or vendor in the picker). Empty: a Custom Endpoint model if any, else the first available."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "sunstone",
+          "title": "Sunstone",
+          "icon": "resources/sunstone-mark.svg"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "sunstone.places",
+        "contents": "A place is somewhere a model runs. Nothing here leaves your machine, and a place's key is kept in the editor's secret store rather than in settings.\n\n[Start a server on this machine](command:sunstone.startLocal)\n\nAlready have a box? Paste the pairing line it gave you.\n[Add a place](command:sunstone.pair)\n\nNo hardware to hand? The standalone page will tell you what fits this machine and rent a box that does.\n[Open the page](command:sunstone.openChat)"
+      },
+      {
+        "view": "sunstone.places",
+        "contents": "Weave a folder and the models in the picker can search it, with citations, without sending it anywhere.\n[Weave this folder](command:sunstone.weaveFolder)",
+        "when": "workspaceFolderCount != 0"
+      }
+    ],
+    "views": {
+      "sunstone": [
+        {
+          "id": "sunstone.places",
+          "name": "Places",
+          "icon": "resources/sunstone-mark.svg",
+          "contextualTitle": "Sunstone"
+        },
+        {
+          "type": "webview",
+          "id": "sunstone.weave",
+          "name": "Memory",
+          "contextualTitle": "Black Window memory"
+        }
+      ]
+    },
+    "languageModelTools": [
+      {
+        "name": "blackwindow_weave_search",
+        "displayName": "Black Window weave search",
+        "modelDescription": "Semantic search over the user's woven folders (Black Window's memory): returns the passages closest to the query with their source file and a score. Use it to find where something is defined, documented or discussed in the user's own files before answering. Returns nothing useful until a folder has been woven. When a result names the right file but does not contain the answer, search again with `source` set to that file rather than rephrasing the query: re-asking the whole store returns the same passages, while reading one source returns more of it.",
+        "userDescription": "Search the woven folders",
+        "toolReferenceName": "weave",
+        "canBeReferencedInPrompt": true,
+        "icon": "$(search)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "What to look for, in plain words or a code identifier"
+            },
+            "k": {
+              "type": "number",
+              "description": "How many passages (default 8, max 24)"
+            },
+            "source": {
+              "type": "string",
+              "description": "Restrict the search to one source, given exactly as a result above labels it. Returns up to 8 passages from that source instead of 2, which is how to see a table's other rows or the sentence a number belongs to"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "auto",
+                "text",
+                "code",
+                "all"
+              ],
+              "description": "Which rows to put first: text (notes, docs, digests, memory) for questions about what was written or decided; code for where something is defined or how it works; auto guesses from the question; all ranks everything together"
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
+      },
+      {
+        "name": "blackwindow_weave_folder",
+        "displayName": "Black Window weave folder",
+        "modelDescription": "Index a workspace folder into Black Window's memory so blackwindow_weave_search can find things in it. Text and code files only; stays on the machine.",
+        "userDescription": "Weave a workspace folder",
+        "toolReferenceName": "weaveFolder",
+        "canBeReferencedInPrompt": true,
+        "icon": "$(database)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "folder": {
+              "type": "string",
+              "description": "Workspace folder name (default: the first one)"
+            }
+          }
+        }
+      },
+      {
+        "name": "blackwindow_lookup",
+        "displayName": "Black Window lookup",
+        "modelDescription": "Live lookup with citations: reads Wikipedia (default), the news desk (where=news: the last days' events) or the web (where=web) for the question, keeps what it read in Black Window's memory, and returns the article opening plus the passages nearest the question with their sources. Use for facts about the world, recent events, and anything not in the user's files.",
+        "userDescription": "Look something up (Wikipedia, news, web)",
+        "toolReferenceName": "lookup",
+        "canBeReferencedInPrompt": true,
+        "icon": "$(globe)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "The question or topic"
+            },
+            "where": {
+              "type": "string",
+              "enum": [
+                "wiki",
+                "news",
+                "web"
+              ],
+              "description": "wiki (default), news, or web"
+            },
+            "k": {
+              "type": "number",
+              "description": "How many passages (default 8, max 16)"
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
+      },
+      {
+        "name": "blackwindow_digest",
+        "displayName": "Black Window digest",
+        "modelDescription": "Read a whole file into ordered notes (one note per part, then notes of notes while they outgrow a window), with a chat model. Use for 'what is this file about', summaries of long documents, or before answering about a file too long to read directly. The notes are kept in Black Window's memory.",
+        "userDescription": "Read a file whole into notes",
+        "toolReferenceName": "digest",
+        "canBeReferencedInPrompt": true,
+        "icon": "$(book)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Workspace-relative or absolute path; empty for the active editor's file"
+            }
+          },
+          "required": [
+            "path"
+          ]
+        }
+      },
+      {
+        "name": "blackwindow_remember",
+        "displayName": "Black Window remember",
+        "modelDescription": "Keep a note in Black Window's memory across chats (a decision, a fact about the project, a preference). Later questions find it through blackwindow_weave_search.",
+        "userDescription": "Remember a note across chats",
+        "toolReferenceName": "remember",
+        "canBeReferencedInPrompt": true,
+        "icon": "$(pin)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string",
+              "description": "The note, in full sentences"
+            },
+            "label": {
+              "type": "string",
+              "description": "Short label"
+            }
+          },
+          "required": [
+            "text"
+          ]
+        }
+      }
+    ],
+    "chatParticipants": [
+      {
+        "id": "sunstone.blackwindow",
+        "name": "blackwindow",
+        "fullName": "Black Window",
+        "description": "Answers from the folders you have woven, with citations",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "weave",
+            "description": "Weave the current workspace folder (or one by name) into memory"
+          },
+          {
+            "name": "lookup",
+            "description": "Read Wikipedia for the question and answer from it, cited"
+          },
+          {
+            "name": "news",
+            "description": "Read the news desk for the question and answer from it, cited"
+          },
+          {
+            "name": "digest",
+            "description": "Read a file whole into notes (path, or the active file)"
+          }
+        ]
+      }
+    ],
+    "languageModelChatProviders": [
+      {
+        "vendor": "blackwindow",
+        "displayName": "Black Window",
+        "configuration": {
+          "type": "object",
+          "properties": {
+            "baseUrl": {
+              "type": "string",
+              "title": "Server URL",
+              "description": "An OpenAI-compatible server: a llama-server on this machine, a Mac on your network, a box you rent. Example: http://127.0.0.1:8080. For a BLACK WINDOW pairing line, or for more than one server, use the Sunstone: Add a Place command instead."
+            },
+            "apiKey": {
+              "type": "string",
+              "secret": true,
+              "title": "API key",
+              "description": "Left empty for a server that has none. Held in the editor's secret store."
+            }
+          }
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=out/extension.js --sourcemap && esbuild test/spike.ts test/diag.ts test/m1.ts test/m2.ts test/weave.ts test/provider.ts test/bench.ts test/probe.ts test/assess.ts test/rank.ts test/select.ts test/signin.ts test/installed.ts test/run.ts --bundle --platform=node --format=cjs --external:vscode --outdir=out/test && esbuild tools/swebench_grep.ts --bundle --platform=node --format=cjs --outdir=out/tools",
+    "sync-engine": "scripts/sync-engine.sh",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "installed": "scripts/run-installed.sh",
+    "spike": "npm run build && node out/test/run.js",
+    "m1": "npm run build && SUNSTONE_TEST=m1 node out/test/run.js",
+    "m2": "npm run build && SUNSTONE_TEST=m2 node out/test/run.js",
+    "provider": "npm run build && SUNSTONE_TEST=provider node out/test/run.js",
+    "assess": "npm run build && SUNSTONE_TEST=assess SUNSTONE_WORKSPACE=${SUNSTONE_WORKSPACE:-$PWD/test/assess.code-workspace} node out/test/run.js",
+    "signin": "npm run build && SUNSTONE_TEST=signin SUNSTONE_KEEP_EXTENSIONS=1 SUNSTONE_WORKSPACE=${SUNSTONE_WORKSPACE:-$PWD/test/assess.code-workspace} node out/test/run.js",
+    "rank": "npm run build && SUNSTONE_TEST=rank SUNSTONE_WORKSPACE=${SUNSTONE_WORKSPACE:-$PWD/test/assess.code-workspace} node out/test/run.js",
+    "select": "npm run build && SUNSTONE_TEST=select SUNSTONE_WORKSPACE=${SUNSTONE_WORKSPACE:-$PWD/test/assess.code-workspace} node out/test/run.js",
+    "package": "npm run typecheck && npm run build && vsce package --out out/sunstone-$npm_package_version.vsix && scripts/check-vsix.sh out/sunstone-$npm_package_version.vsix"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.104.0",
+    "@vscode/test-electron": "^2.4.1",
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.6.0"
+  }
+}

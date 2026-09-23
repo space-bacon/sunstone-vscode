@@ -1,0 +1,11 @@
+node_modules/
+out/
+dist/
+*.vsix
+media/
+.DS_Store
+.vscode-test/
+bench/data/
+# Assessment runs write here. They carry every tool result the model saw, which is file content from
+# whatever was woven, so they are run output rather than source. C53 is what happens when they escape.
+.sunstone/

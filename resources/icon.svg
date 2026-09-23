@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- Vector master for resources/icon.png, the Marketplace tile. Regenerate the PNG with:
+       rsvg-convert -w 256 -h 256 resources/icon.svg -o resources/icon.png
+       The facets are strokes rather than the source artwork's hairline filled slivers, which are
+       about 1.2 units wide in a 269-unit box and wash out below roughly 128px.
+       #c98a5b is the mark's colour on sunstonenorth.com, in frontend/public/sunstone-mark.svg. -->
+  <rect width="256" height="256" rx="30" fill="#0b0b0c"/>
+  <g transform="translate(128 128) scale(0.86) translate(-140.75 -89.35)"
+     fill="none" stroke="#c98a5b" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M82.7 153 L136.4 161 L202.2 145.1 L240.9 110.3 L248.8 70.7 L229.1 35.1 L183.3 17.7
+             L125.1 17.7 L75.3 33.7 L46.5 55.5 L32.7 93.8 L47.4 123.6 Z"/>
+    <path d="M230.5 81.3 L225.5 65.4 L201.7 42.5 L148.9 34.5 L75.3 33.7"/>
+    <path d="M225.5 65.4 L248.8 70.7 M225.5 65.4 L229.1 35.1 M201.7 42.5 L183.3 17.7
+             M148.9 34.5 L178.2 17.7"/>
+    <path d="M230.5 81.3 L240.9 110.3 L193.4 134.2 L136.5 155.2 L108.2 148.5 L82.7 153"/>
+    <path d="M193.4 134.2 L202.2 145.1 M136.5 155.2 L136.4 161"/>
+    <path d="M108.2 148.5 L55.2 100.9 L46.5 55.5"/>
+    <path d="M55.2 100.9 L52.5 106.2 L47.4 123.6"/>
+  </g>
+</svg>
