@@ -24,7 +24,9 @@ offered to every model in the picker, including the hosted ones.
 | `#weaveFolder` | Indexes another folder without leaving the conversation. |
 | `@blackwindow` | A chat participant that answers straight out of your folders, with citations. |
 
-Folders are re-indexed on save, so the store never drifts from the working tree.
+Before each search, whatever changed since it was indexed is read again: a save, an unsaved buffer,
+a write from a terminal or a patch tool, a deleted or renamed directory, a branch switch. Paths the
+folder walk excludes stay excluded when they are written later.
 
 **Your own servers in the model picker.** Anything serving the OpenAI-compatible API appears beside
 the hosted models: `llama.cpp`, vLLM, or a router in front of several. Tool calling is enabled for
@@ -45,12 +47,15 @@ Every figure carries the population it came from.
 |---|---|---|
 | The weave finds the file an issue is about | `recall@1` **229/500 (0.458)** against a permuted-query floor of **5/500 (0.010)** and a text-search arm at **58/500 (0.116)** | every instance of SWE-bench Verified, twelve repositories, one store per instance at its own `base_commit`. django is 46.2% of the set, and per-repository recall runs 0.265 to 0.688 |
 | A prompt past the model's window is folded into the weave rather than refused | a fact **154,699 characters past the cut** returned verbatim in **32.1 s** | one arm on GLM-4.7-Flash at `n_ctx` 131,072, cut at 92,160 characters |
-| Giving an agent a searchable store instead of leaving it to grep | **52.00 against 44.25 of 56** (Claude Sonnet 5) and **53.00 against 44.75** (Opus 5), reading **4.6x and 3.8x less tool output** and finishing 2.7x and 3.5x faster | 56 items generated from a claim ledger with the figures stripped from the question, 4 runs an arm, 224 item-runs an arm. The control holds `grep` and `cat` over the same files. The arms never overlap: the worst run with it beats the best run without it on both models |
+| An agent given the store and a verdict tool over a claims ledger, against one given grep | **52.00 against 44.25 of 56** (Claude Sonnet 5) and **53.00 against 44.75** (Opus 5), reading **4.6x and 3.8x less tool output** and finishing 2.7x and 3.5x faster | 56 items generated from a claim ledger with the figures stripped from the question, 4 runs an arm, 224 item-runs an arm. The control holds `grep` and `cat` over the same files. The arms never overlap: the worst run with the two beats the best run without them on both models |
 | Indexing rate through `indexFolder`, reading and chunking included | **267 passages a second** | 10 files, 454 passages in 1.7 s, WebGPU in the VS Code webview on an M2 Ultra |
 
-Three limits travel with that third row. It is measured over a claims register rather than a
-codebase, so it is a document-retrieval result. The corpus is 130 lines, and the design predicts
-retrieval's advantage grows with corpus size, which is unmeasured. Both models are from one vendor.
+Four limits travel with that third row. The verdict tool answers from that register's ledger and does
+not ship in this extension, and the store's own share of the gain was not separated on these items.
+It is measured over a claims
+register rather than a codebase, so it is a document-retrieval result. The corpus is 130 lines, and
+the design predicts retrieval's advantage grows with corpus size, which is unmeasured. Both models
+are from one vendor.
 
 ## Getting started
 

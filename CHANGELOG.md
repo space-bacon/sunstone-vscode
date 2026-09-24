@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.1.3
+
+A review of 0.1.2's freshness path found seven cases it got wrong. Each is now a check in
+`npm run fresh`, each failed on 0.1.2, and all sixteen checks pass here: from an empty store, from a
+restored one, and with the extension loaded from the installed package rather than the source tree.
+
+- A file written after the weave into a path the folder walk excludes was indexed by the next
+  search anyway. Build output under `out/`, a virtualenv, and a directory kept out by
+  `sunstone.weave.exclude` were all returned by search on 0.1.2. A new file is now asked of the
+  walk's own include and exclude globs through the same `findFiles` call, and saves take that path
+  too, which they did not either.
+- A directory deleted whole left its files answering. The watcher reports the directory once rather
+  than each file under it, and that event was discarded for having no text extension. A path that
+  is gone now takes every source under it with it.
+- A renamed directory went on answering under its old path and never under the new one. A
+  directory that appears is now walked.
+- Searches issued together, as a model's parallel tool calls are, did not all see a write. Of three,
+  one returned the new text and two the old. One freshen runs at a time, and a search that arrives
+  during one waits for it.
+- In a session whose store was built rather than restored, which is every first session after
+  install, a re-weave with nothing changed re-embedded every file, 3 of 3 in the test folder. The
+  0.1.2 note below says a rescan costs "a directory walk rather than a re-embed", which held only
+  after a reload. Unchanged files are now skipped either way.
+- A folder below the top of its repository, and a linked worktree or a submodule, read an empty
+  git stamp, so a branch switch there was caught only if the watcher delivered it. The stamp now
+  finds the repository above the folder and follows a `.git` file to its git directory.
+
+An external write was searchable in 75, 77 and 77 ms on this version's three runs, and in 77 to
+191 ms on four runs of 0.1.2 today, where the 0.1.2 note gives one run's 74 ms. The limit stated for
+0.1.2 still holds: the suite runs on macOS, where the watcher does not overflow, so the stamp path is
+confirmed rather than isolated.
+
+The listing's third measured row now names both things the measured arm held, the store and a
+verdict tool over the claims ledger, because the extension ships the store and not the verdict tool.
+The figures are unchanged.
+
 ## 0.1.2
 
 A bulk rewrite no longer depends on the watcher noticing it. Dipankar Sarkar again: `git checkout`
