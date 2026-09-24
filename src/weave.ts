@@ -636,6 +636,8 @@ export class Weave implements vscode.WebviewViewProvider, vscode.Disposable {
       if (out.length >= k) break;
     }
     for (const h of out) { const s = await this.supersededBy(h.source); if (s) h.text = `[superseded: ${s}]\n${h.text}`; }
+    // Replies the participant kept before 0.1.3, under memory/<day>/chat.
+    for (const h of out) if (/^memory\/\d{4}-\d\d-\d\d\/chat$/.test(h.source)) h.text = `[an earlier @blackwindow answer, not a source; check what it cites]\n${h.text}`;
     return out;
   }
 

@@ -32,6 +32,12 @@ An external write was searchable in 75, 77 and 77 ms on this version's three run
 0.1.2 still holds: the suite runs on macOS, where the watcher does not overflow, so the stamp path is
 confirmed rather than isolated.
 
+`@blackwindow` no longer keeps its replies. Each turn used to go into memory as the question and the
+whole answer, and later searches returned that answer as though it were a source, so an earlier reply,
+right or wrong, could be cited back as evidence. It now keeps the question and the sources the reply
+cited, and a later search leads to those sources as they are now. Replies kept by earlier versions
+stay in the store and come back labelled as an earlier answer, not a source.
+
 The listing's third measured row now names both things the measured arm held, the store and a
 verdict tool over the claims ledger, because the extension ships the store and not the verdict tool.
 The figures are unchanged.

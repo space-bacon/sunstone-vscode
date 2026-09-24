@@ -6,13 +6,22 @@ import { digestFile, pickModel } from "./digest";
 
 // Black Window inside VS Code's own chat: tools any model can call in agent mode (`#weave`, `#lookup`, `#digest`,
 // `#remember`), and the @blackwindow participant, which answers from the weave in the house voice with whatever model
-// the picker has, looks things up on request, and keeps its turns as memory for later chats.
+// the picker has, looks things up on request, and keeps each question with the sources it cited for later chats.
 
 const HOUSE = "You are a concise, capable assistant. Write in full sentences and lead with the fact. Avoid em dashes. Do not announce that something is important or worth noting; state it. Notes retrieved for this message follow; use them when they answer the question and cite them as [n], otherwise answer from what you know and say so.";
 
 function formatHits(hits: Hit[]): string {
   // A code passage's label carries its first line (@L12): shown as file:line so the agent can open exactly there.
   return hits.map((h, i) => { const m = h.text.match(/^\[[^\]]*@L(\d+)\]/); return `[${i + 1}] ${h.source}${m ? `:${m[1]}` : ""} (score ${h.score.toFixed(2)})\n${h.text.slice(0, 2400)}`; }).join("\n\n");
+}
+
+/** A participant turn's memory: the question and the sources the reply cited as [n], never the reply itself. */
+export function askedNote(prompt: string, reply: string, hits: Hit[], day: string): string {
+  const cited = [...new Set([...reply.matchAll(/\[(\d+(?:\s*[,;]\s*\d+)*)\]/g)].flatMap((m) => m[1].split(/[,;]/)).map((n) => hits[Number(n.trim()) - 1]?.source).filter((s): s is string => !!s))];
+  const sources = cited.length ? cited : [...new Set(hits.map((h) => h.source))];
+  if (!sources.length) return "";
+  const q = prompt.replace(/\s+/g, " ").trim();
+  return `On ${day} @blackwindow was asked: ${q}${/[.?!]$/.test(q) ? "" : "."} It ${cited.length ? "cited" : "consulted"} ${sources.join(", ")}. Read those for the answer; the reply was not kept.`;
 }
 
 // A weave result labels its source `<folder>/path/to/file` and a model hands that label straight back, but a woven
@@ -257,8 +266,9 @@ export function registerChat(context: vscode.ExtensionContext, weave: Weave, out
       if (part instanceof vscode.LanguageModelTextPart) { response.markdown(part.value); reply += part.value; }
     }
     if (hits.length) response.markdown(`\n\n<sub>${read ? read + " \u00b7 " : ""}${hits.length} notes: ${[...new Set(hits.map((h) => h.source))].slice(0, 6).join(", ")}</sub>`);
-    // The turn goes into memory so a later chat can recall it ("what did we settle about X last week").
-    if (reply.trim()) weave.remember(`Q: ${prompt}\nA: ${reply.trim()}`, "chat").catch(() => 0);
+    // A kept reply came back in later searches as if it were a source; the sources themselves are current, an old answer is not.
+    const kept = reply.trim() ? askedNote(prompt, reply, hits, new Date().toISOString().slice(0, 10)) : "";
+    if (kept) weave.remember(kept, "asked").catch(() => 0);
   });
   participant.iconPath = vscode.Uri.joinPath(context.extensionUri, "resources", "sunstone-mark.svg");
   context.subscriptions.push(participant);
