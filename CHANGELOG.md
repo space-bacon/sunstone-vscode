@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.5
+
+With `sunstone.memoryReader` set to `bge-small`, the memory embeds at float32 on WebGPU, and there the engine's
+runtime returned the last passage of a batch as not-a-number: 5 of 200 test passages in batches of 32, and 1 row of
+the 602 in a woven test document on each of three runs. The page embedded such a passage again, so the store stayed
+sound, but each one cost a second pass. Each batch now carries one throwaway passage that takes the fault, and every
+other passage's vector is unchanged. The default reader runs at half precision and never hit it.
+
 ## 0.1.4
 
 The memory's reader is now motherlode-code-small-en-v0.1 by default (`sunstone.memoryReader`, `soup`; set it
