@@ -41,11 +41,11 @@ question, so what leaves the window is the least relevant part rather than simpl
 
 Every figure carries the population it came from.
 
-![Naming the right file first: 229 of 500 on SWE-bench Verified](https://sunstonenorth.com/gallery/sunstone-3.png)
+![Naming the right file first: 255 of 500 on SWE-bench Verified as it ships, 229 in the published run](https://sunstonenorth.com/gallery/sunstone-3.png)
 
 | | measured | population |
 |---|---|---|
-| The weave finds the file an issue is about | `recall@1` **229/500 (0.458)** against a permuted-query floor of **5/500 (0.010)** and a text-search arm at **58/500 (0.116)** | every instance of SWE-bench Verified, twelve repositories, one store per instance at its own `base_commit`. django is 46.2% of the set, and per-repository recall runs 0.265 to 0.688 |
+| The weave finds the file an issue is about | `recall@1` **229/500 (0.458)** in the published run, against a permuted-query floor of **5/500 (0.010)** and a text-search arm at **58/500 (0.116)**; as it ships from 0.1.4, **255/500**, replayed | every instance of SWE-bench Verified, twelve repositories, one store per instance at its own `base_commit`. django is 46.2% of the set, and per-repository recall runs 0.265 to 0.688 in the published run |
 | A prompt past the model's window is folded into the weave rather than refused | a fact **154,699 characters past the cut** returned verbatim in **32.1 s** | one arm on GLM-4.7-Flash at `n_ctx` 131,072, cut at 92,160 characters |
 | An agent given the store and a verdict tool over a claims ledger, against one given grep | **52.00 against 44.25 of 56** (Claude Sonnet 5) and **53.00 against 44.75** (Opus 5), reading **4.6x and 3.8x less tool output** and finishing 2.7x and 3.5x faster | 56 items generated from a claim ledger with the figures stripped from the question, 4 runs an arm, 224 item-runs an arm. The control holds `grep` and `cat` over the same files. The arms never overlap: the worst run with the two beats the best run without them on both models |
 | Indexing rate through `indexFolder`, reading and chunking included | **267 passages a second** | 10 files, 454 passages in 1.7 s, WebGPU in the VS Code webview on an M2 Ultra |
@@ -57,8 +57,12 @@ register rather than a codebase, so it is a document-retrieval result. The corpu
 the design predicts retrieval's advantage grows with corpus size, which is unmeasured. Both models
 are from one vendor.
 
-The first and last rows were measured with the reader before 0.1.4, bge-small-en-v1.5. The default is now
-motherlode-code-small-en-v0.1. On a replay of the same published search path it places the file first for
+The first and last rows were measured with the reader before 0.1.4, bge-small-en-v1.5, and the first on the engine as
+it searched on 2026-09-15. Every release of this extension has shipped a later engine, whose search reranks a tool's
+candidates with a lexical bonus, and replayed on it bge-small places the file first for 197 of 500: that is what 0.1.3
+and earlier did, not 229. The default reader is now motherlode-code-small-en-v0.1. On the engine as it ships it places
+the file first for 255 of 500, and for 207 of the 411 instances its contamination check leaves against 158 for
+bge-small (69 wins, 20 losses). On a replay of the published search path it places it first for
 230 of the 411 instances its contamination check leaves, against 192 for bge-small (67 wins, 29 losses, sign
 p 0.00013). It weaves the folder behind the last row, which has since grown to 10 files and 626 passages, in
 1.47 to 1.48 s over three runs, 426 passages a second, where bge-small takes 2.18 to 2.19 s, 286 a second, on

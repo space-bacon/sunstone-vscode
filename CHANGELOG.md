@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+The README's file-finding row gave the published run's 229 of 500 as what the extension does. That run used an
+earlier engine and bge-small; every release has shipped a later engine, on which bge-small reads 197 of 500, replayed.
+The row now gives the published run as a run, beside 255 of 500 with Motherlode on the engine as it ships.
+
 ## 0.1.5
 
 With `sunstone.memoryReader` set to `bge-small`, the memory embeds at float32 on WebGPU, and there the engine's
