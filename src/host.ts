@@ -21,6 +21,22 @@ const TYPES: Record<string, string> = {
   ".srtidx": "application/octet-stream", ".txt": "text/plain; charset=utf-8", ".py": "text/plain; charset=utf-8",
 };
 
+// Memory readers by the name the page's ?mem= takes, and the repository the page asks for.
+const MEM_REPOS: Record<string, string> = { "bge-small": "Xenova/bge-small-en-v1.5", soup: "RiverRider/motherlode-code-small-en-v0.1" };
+
+/** The page's reader query for the sunstone.memoryReader setting: ?mem= always, since the page's default is not
+ *  bge-small's any more, and, when sunstone.memoryReaderPath names a folder, ?memBase= and ?readerBase= pointing at
+ *  the server's models/ route. */
+export function memQuery(server: PageServer, sep: "?" | "&"): string {
+  const cfg = vscode.workspace.getConfiguration("sunstone");
+  const name = cfg.get<string>("memoryReader") || "soup", repo = MEM_REPOS[name];
+  if (!repo) return "";
+  const dir = cfg.get<string>("memoryReaderPath") || "";
+  let q = `${sep}mem=${name}`;
+  if (dir && fs.existsSync(dir)) { server.models.set(repo, path.resolve(dir)); q += `&memBase=./models/&readerBase=./models/${repo}`; }
+  return q;
+}
+
 // Runs inside the page (injected into index.html by the server, ahead of the page's module): puts the page in host
 // mode, answers eval requests from the shell, forwards page errors, and says hello.
 function pageScript(): string {
@@ -87,6 +103,8 @@ export class PageServer implements vscode.Disposable {
   private server: http.Server | undefined;
   private base = "";
   origin = "";
+  /** Repository id -> local folder, served under models/<repo>/ for a reader the Hub does not serve to the page. */
+  readonly models = new Map<string, string>();
   constructor(private readonly root: string, private readonly port = 0) {}
 
   /** The page URL (index.html under the token path), starting the server on first use. */
@@ -102,8 +120,9 @@ export class PageServer implements vscode.Disposable {
       if (!u.pathname.startsWith(`/${token}/`)) { res.writeHead(404); return res.end(); }
       let rel = decodeURIComponent(u.pathname.slice(token.length + 2)) || "index.html";
       if (rel.endsWith("/")) rel += "index.html";
-      const file = path.normalize(path.join(root, rel));
-      if (!file.startsWith(root) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); return res.end(); }
+      let dir = root, file = path.normalize(path.join(root, rel));
+      for (const [repo, d] of this.models) if (rel.startsWith(`models/${repo}/`)) { dir = d; file = path.normalize(path.join(d, rel.slice(repo.length + 8))); }
+      if (!file.startsWith(dir) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); return res.end(); }
       const type = TYPES[path.extname(file).toLowerCase()] || "application/octet-stream";
       res.setHeader("content-type", type); res.setHeader("cache-control", "no-cache");
       if (rel === "index.html") { const html = fs.readFileSync(file, "utf8").replace(/<head>/i, `<head>${inject}`); res.writeHead(200); return res.end(html); }
@@ -157,7 +176,7 @@ export class Host implements vscode.Disposable {
   /** The chat in an editor panel beside the current one. */
   async open(): Promise<vscode.WebviewPanel> {
     if (this.panel) { this.panel.reveal(undefined, true); return this.panel; }
-    const pageUrl = await this.server.url(this.query);
+    const pageUrl = await this.server.url(this.query + memQuery(this.server, this.query ? "&" : "?"));
     const panel = vscode.window.createWebviewPanel("sunstone.chat", "Black Window", { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true }, { enableScripts: true, retainContextWhenHidden: true });
     this.panel = panel;
     this.wire(panel.webview, panel.onDidDispose);
@@ -167,7 +186,7 @@ export class Host implements vscode.Disposable {
 
   /** The page inside a sidebar WebviewView (resolved by VS Code when the view is first shown). */
   async attach(view: vscode.WebviewView): Promise<void> {
-    const pageUrl = await this.server.url(this.query);
+    const pageUrl = await this.server.url(this.query + memQuery(this.server, this.query ? "&" : "?"));
     this.view = view;
     view.webview.options = { enableScripts: true };
     this.wire(view.webview, view.onDidDispose);

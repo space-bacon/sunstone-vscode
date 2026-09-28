@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.1.4
+
+The memory's reader is now motherlode-code-small-en-v0.1 by default (`sunstone.memoryReader`, `soup`; set it
+to `bge-small` for the reader before it). It is a small encoder fitted for finding code: replaying Black
+Window's published search path over the 411 SWE-bench Verified instances its contamination check leaves, it
+places the file an issue needs first for 230 against bge-small's 192, and on scifact abstracts it scores 0.7093
+against 0.6766. On COCO captions it trails by 0.0033. It runs here from its half-precision export, 67 MB where
+bge-small's download is 133 MB, which matches PyTorch float32 at a smallest cosine of 0.99990 on WebGPU and embeds
+2.1 times as fast as its float32 file. The figures and their artifacts are on the model's card at
+huggingface.co/RiverRider/motherlode-code-small-en-v0.1.
+
+A store woven by 0.1.3 or earlier is re-embedded once, on the first open after the update, and saved. 0.1.3 had
+one reader and saved its shards without naming it. The reader setting added after it kept that format and labelled
+every restored vector bge-small, so on those unreleased builds a store written under the soup would have been
+re-embedded on every open. Each source now records its reader, and a new check, `persist.no.reembed`, fails when a
+restore under the same reader embeds anything again. In a test profile the 0.1.3 package wove 34 sources into 1,171
+vectors; 0.1.4's first open read none of them as saved and re-embedded all 1,171, and its next open read all 1,172
+it then held as saved.
+
+The licence's grant is worded in the form BUSL 1.1's covenant allows: production use for any internal purpose,
+with the Terms' own permission to copy, modify, redistribute and use for non-production purposes left as it is.
+
+The engine is Black Window at a newer build: the browser's fallback reader reads 256 tokens where it read 64, and
+its wasm is built at opt-level 3, which embeds 6.2% faster in a one-thread bench and is 5,193,284 bytes where it
+was 6,460,210.
+
 ## 0.1.3
 
 A review of 0.1.2's freshness path found seven cases it got wrong. Each is now a check in

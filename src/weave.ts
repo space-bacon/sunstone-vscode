@@ -385,7 +385,8 @@ export class Weave implements vscode.WebviewViewProvider, vscode.Disposable {
     if (!this.dir) return;
     const t0 = Date.now();
     this.format = await this.host.eval<string>("return SESSION_FORMAT;", 10_000).catch(() => this.format) || this.format;
-    let held = 0, vectors = 0, added = 0;
+    let held = 0, vectors = 0, added = 0, direct = 0;
+    const pageReader = await this.host.bw<{ memReader: string | null }>("health", []).then((h) => h?.memReader || "").catch(() => "");
     const meta = await this.readJson(vscode.Uri.joinPath(this.dir, "meta.json"));
     if (meta) {
       this.mtimes = new Map(Object.entries(meta.mtimes || {}));
@@ -395,22 +396,30 @@ export class Weave implements vscode.WebviewViewProvider, vscode.Disposable {
         if (!/^(shard-\d+|big-[a-z0-9]+)\.json$/.test(name)) continue;
         const data = await this.readJson(vscode.Uri.joinPath(this.dir, name));
         if (!data?.sources) continue;
-        const passages: any[] = [], keys: string[] = [], parts: Buffer[] = [];
-        let dim = 384;
+        // A shard records each source's reader; one written before it did holds bge-small's rows, the only reader then.
+        const groups = new Map<string, { passages: any[]; keys: string[]; parts: Buffer[]; dim: number; sources: string[] }>();
         for (const [source, row] of Object.entries<any>(data.sources)) {
           this.persisted.set(source, (row.passages || []).length);
           this.placed.set(source, name);
           // Written before the threshold existed, or before it grew past it: the next save gives it its own file.
           if ((row.passages || []).length >= BIG_SOURCE && !name.startsWith("big-")) this.dirty.add(source);
-          for (const p of row.passages || []) passages.push({ key: p.key, source, text: p.text });
-          if (row.f16) { keys.push(...(row.passages || []).map((p: any) => p.key)); parts.push(Buffer.from(row.f16, "base64")); dim = row.dim || dim; }
+          const reader = row.reader || "bge-small";
+          let g = groups.get(reader);
+          if (!g) { g = { passages: [], keys: [], parts: [], dim: 384, sources: [] }; groups.set(reader, g); }
+          g.sources.push(source);
+          for (const p of row.passages || []) g.passages.push({ key: p.key, source, text: p.text });
+          if (row.f16) { g.keys.push(...(row.passages || []).map((p: any) => p.key)); g.parts.push(Buffer.from(row.f16, "base64")); g.dim = row.dim || g.dim; }
         }
-        if (!passages.length) continue;
-        held += passages.length; vectors += keys.length;
-        const f16 = parts.length ? Buffer.concat(parts).toString("base64") : undefined;
-        const session = { format: this.format, version: 2, turns: [], attachments: [], passages, vectors: f16 ? { reader: "bge-small", dim, n: keys.length, keys, f16 } : undefined };
-        const r = await this.host.bw<{ passages: number }>("import", [session, "weave"], 300_000);
-        added += r?.passages || 0;
+        for (const [reader, g] of groups) {
+          if (!g.passages.length) continue;
+          held += g.passages.length; vectors += g.keys.length;
+          const f16 = g.parts.length ? Buffer.concat(g.parts).toString("base64") : undefined;
+          const session = { format: this.format, version: 2, turns: [], attachments: [], passages: g.passages, vectors: f16 ? { reader, dim: g.dim, n: g.keys.length, keys: g.keys, f16 } : undefined };
+          const r = await this.host.bw<{ passages: number; direct?: number }>("import", [session, "weave"], 300_000);
+          added += r?.passages || 0; direct += r?.direct || 0;
+          // Another reader's rows were re-embedded by the import; saving them now makes that happen once.
+          if (f16 && reader !== pageReader) for (const s of g.sources) this.dirty.add(s);
+        }
       }
     } else if (this.legacy) {
       // A store written before the shards: read it whole once, then the next save lays it down in pieces.
@@ -418,14 +427,15 @@ export class Weave implements vscode.WebviewViewProvider, vscode.Disposable {
       if (!data?.session) return;
       this.mtimes = new Map(Object.entries(data.mtimes || {}));
       held = (data.session.passages || []).length; vectors = data.session.vectors?.n || 0;
-      const r = await this.host.bw<{ passages: number }>("import", [data.session, "weave"], 300_000);
-      added = r?.passages || 0;
+      const r = await this.host.bw<{ passages: number; direct?: number }>("import", [data.session, "weave"], 300_000);
+      added = r?.passages || 0; direct = r?.direct || 0;
       this.migrate = true;
     } else return;
     const n = await this.host.eval<number>(`return window.bw.sources().reduce((a, s) => a + s.passages, 0);`, 10_000).catch(() => 0);
     const secs = Math.round((Date.now() - t0) / 100) / 10;
-    this.out.appendLine(`[weave] restored ${n.toLocaleString()} passages (files held ${held}, vectors ${vectors}, import added ${added}; ${this.mtimes.size} files) in ${secs} s`);
-    this.lastRestore = { held, vectors, added, now: n };
+    this.out.appendLine(`[weave] restored ${n.toLocaleString()} passages (files held ${held}, vectors ${vectors}, read as saved ${direct}, import added ${added}; ${this.mtimes.size} files) in ${secs} s`);
+    this.lastRestore = { held, vectors, added, direct, now: n };
+    if (this.dirty.size) this.scheduleSave();
     // Per-folder counts from the restored sources, so the panel is right before any re-weave.
     const sources = await this.host.bw<{ source: string; passages: number }[]>("sources", []).catch(() => []);
     // A file whose shard did not come back is not in the page, and its mtime must not let the re-weave skip it.
@@ -434,7 +444,7 @@ export class Weave implements vscode.WebviewViewProvider, vscode.Disposable {
     for (const f of this.folders) { const base = path.basename(f) + "/"; this.counts.set(f, sources.filter((s) => s.source.startsWith(base)).reduce((a, s) => a + s.passages, 0)); }
     this.publish(undefined, `restored ${n.toLocaleString()} passages in ${secs} s`);
   }
-  lastRestore: { held: number; vectors: number; added: number; now: number } | undefined;
+  lastRestore: { held: number; vectors: number; added: number; direct: number; now: number } | undefined;
 
   scheduleSave(): void {
     clearTimeout(this.saveTimer);
@@ -465,8 +475,8 @@ export class Weave implements vscode.WebviewViewProvider, vscode.Disposable {
       for (const s of job.gone) { delete data.sources[s]; if (this.placed.get(s) === name) { this.placed.delete(s); this.persisted.delete(s); } }
       // Rows come back a batch of sources at a time so one message never carries the whole file.
       for (const batch of batches(job.changed, live)) {
-        const r = await this.host.bw<{ passages: { key: string; source: string; text: string }[]; vectors?: { dim: number; f16: string } }>("rows", [batch], 300_000);
-        const dim = r.vectors?.dim || 384;
+        const r = await this.host.bw<{ passages: { key: string; source: string; text: string }[]; vectors?: { dim: number; f16: string; reader?: string } }>("rows", [batch], 300_000);
+        const dim = r.vectors?.dim || 384, reader = r.vectors?.reader;
         const buf = r.vectors?.f16 ? Buffer.from(r.vectors.f16, "base64") : undefined;
         const got = new Map<string, { passages: { key: string; text: string }[]; parts: Buffer[] }>();
         (r.passages || []).forEach((p, i) => {
@@ -478,7 +488,7 @@ export class Weave implements vscode.WebviewViewProvider, vscode.Disposable {
         for (const s of batch) {
           const row = got.get(s);
           if (!row) { delete data.sources[s]; this.placed.delete(s); this.persisted.delete(s); continue; }
-          data.sources[s] = { passages: row.passages, dim, f16: row.parts.length ? Buffer.concat(row.parts).toString("base64") : undefined };
+          data.sources[s] = { passages: row.passages, dim, reader, f16: row.parts.length ? Buffer.concat(row.parts).toString("base64") : undefined };
           this.persisted.set(s, row.passages.length); this.placed.set(s, name);
         }
       }

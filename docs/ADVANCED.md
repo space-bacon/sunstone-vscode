@@ -16,7 +16,8 @@ Now:
   no vendor quota, no data leaving machines we hold keys to.
 - **The prompt cache is ours.** llama-server keeps the KV of the prompt prefix. The page's discipline (constant head,
   per-turn material at the end) carries over to the provider: a long agent session re-reads only what changed.
-- **The weave is retrieval we tuned.** bge-small on WebGPU, centred rows, a lexical index beside the dense one, code
+- **The weave is retrieval we tuned.** motherlode-code-small-en-v0.1 on WebGPU (bge-small before 0.1.4), centred
+  rows, a lexical index beside the dense one, code
   chunked by definition and labelled, prose chunked by section. It answers "where is X handled" for a repo the way the
   page answers it for a paper, and it persists.
 - **The tools are ours to shape.** A tool is forty lines and a manifest entry. Anything the suite can do (lookup,
@@ -178,8 +179,9 @@ Pick that agent with a Black Window model in the picker and the whole loop runs 
    moved plus its neighbourhood.
 4. **Places in the tree with rent/stop** (M4) so the box's cost is a click.
 5. **Bench harnesses as tasks with a results view** (M5): the agent measures the model it runs on.
-6. **A second weave reader for code** (a code-tuned embedder beside bge-small) when a measurement shows the gap; not
-   before.
+6. **A second weave reader for code.** Done in 0.1.4, as the default rather than beside bge-small: the measurement
+   that showed the gap is a replay of Black Window's published search path, 230 against 192 files placed first on 411
+   SWE-bench Verified instances, on the card of huggingface.co/RiverRider/motherlode-code-small-en-v0.1.
 
 ## 6. What this is not
 

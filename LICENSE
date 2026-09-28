@@ -5,15 +5,17 @@ Parameters:
   Licensor:             Sunstone North Lab LLC
   Licensed Work:        Sunstone, the VS Code extension hosting the Black Window
                         engine and the Weave.
-  Additional Use Grant: You may use the Licensed Work for any internal purpose,
-                        including commercial development on your own or your
-                        employer's source code, with no limit on seats or users.
-                        Not granted: redistributing the Licensed Work or any
-                        derivative of it, offering it to third parties as a
-                        hosted or managed service, and embedding it or the
-                        compiled kernels it carries in a product or service you
-                        supply to others. Those require a separate commercial
-                        license.
+  Additional Use Grant: You may make production use of the Licensed Work for any
+                        internal purpose, including commercial development on
+                        your own or your employer's source code, with no limit
+                        on seats or users, provided that your use does not
+                        include offering the Licensed Work or a derivative of it
+                        to third parties as a hosted or managed service, or
+                        embedding it or the compiled kernels it carries in a
+                        product or service you supply to others.
+                        For clarity, the Terms of the License already permit
+                        copying, modifying, redistributing and non-production
+                        use.
   Change Date:          September 15, 2030
   Change License:       Apache License, Version 2.0
 

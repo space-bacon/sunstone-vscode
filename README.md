@@ -57,6 +57,13 @@ register rather than a codebase, so it is a document-retrieval result. The corpu
 the design predicts retrieval's advantage grows with corpus size, which is unmeasured. Both models
 are from one vendor.
 
+The first and last rows were measured with the reader before 0.1.4, bge-small-en-v1.5. The default is now
+motherlode-code-small-en-v0.1. On a replay of the same published search path it places the file first for
+230 of the 411 instances its contamination check leaves, against 192 for bge-small (67 wins, 29 losses, sign
+p 0.00013). It weaves the folder behind the last row, which has since grown to 10 files and 626 passages, in
+1.47 to 1.48 s over three runs, 426 passages a second, where bge-small takes 2.18 to 2.19 s, 286 a second, on
+the same machine, since it runs from a half-precision file.
+
 ## Getting started
 
 1. Install, then open the **Sunstone** view in the sidebar.
