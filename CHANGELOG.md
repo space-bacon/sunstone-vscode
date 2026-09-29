@@ -1,10 +1,21 @@
 # Changelog
 
-## Unreleased
+## 0.1.6
+
+The weave tool's search no longer adds a lexical bonus to its candidates; it sorts the head of the list on the raw
+cosine alone. Replayed on SWE-bench Verified with Motherlode, the file an issue needs comes first for 272 of 500 issues
+against 255 with the bonus, and for 221 of the 411 its contamination check leaves against 207, better on 28 and worse
+on 14 (sign p 0.044). With bge-small the same replay reads 236 against 197. On 76 questions over six woven folders the
+bonus moved no answer into or out of the top 8. The engine is blackwidow `a3738ff`.
+
+The listing is named "Sunstone: Codebase Search for Copilot" and its keywords now include the words people search the
+Marketplace with: copilot, codebase search, code search, semantic search, context, agent, embeddings, rag and memory.
+Its five keywords were llama.cpp, local llm, self-hosted, retrieval and offline, and on 2026-09-28 the listing had had
+104 page views and 1 install from VS Code.
 
 The README's file-finding row gave the published run's 229 of 500 as what the extension does. That run used an
 earlier engine and bge-small; every release has shipped a later engine, on which bge-small reads 197 of 500, replayed.
-The row now gives the published run as a run, beside 255 of 500 with Motherlode on the engine as it ships.
+The row now gives the published run as a run, beside what Motherlode does on the engine as each release ships.
 
 ## 0.1.5
 
