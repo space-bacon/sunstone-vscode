@@ -2,7 +2,7 @@
   "name": "sunstone",
   "displayName": "Sunstone: Codebase Search for Copilot",
   "description": "Your coding agent has your files but cannot find them. Sunstone indexes the folders you open and gives any model in the picker, Copilot's included, a proper way to search them. Your own servers can join the picker too.",
-  "version": "0.1.6",
+  "version": "0.1.8",
   "publisher": "sunstonenorth",
   "author": "Sunstone North Lab LLC",
   "license": "SEE LICENSE IN LICENSE",
@@ -48,7 +48,8 @@
   ],
   "main": "./out/extension.js",
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onUri"
   ],
   "contributes": {
     "commands": [
@@ -160,6 +161,16 @@
       {
         "command": "sunstone.judge",
         "title": "Judge assessment runs",
+        "category": "Sunstone"
+      },
+      {
+        "command": "sunstone.serveMcp",
+        "title": "Serve the Weave to MCP Clients",
+        "category": "Sunstone"
+      },
+      {
+        "command": "sunstone.stopMcp",
+        "title": "Stop Serving the Weave to MCP Clients",
         "category": "Sunstone"
       }
     ],
@@ -355,6 +366,11 @@
           "type": "string",
           "default": "",
           "description": "Model used by the digest tool (substring of a model id, name, family or vendor in the picker). Empty: a Custom Endpoint model if any, else the first available."
+        },
+        "sunstone.mcp.serve": {
+          "type": "boolean",
+          "default": false,
+          "description": "Serve each window's weave to MCP clients outside VS Code, such as Claude Code or Cursor, on a Unix socket in a directory only you can open. Turned on by Sunstone: Serve the Weave to MCP Clients, which also copies the client configuration. Not available on Windows."
         }
       }
     },
@@ -584,7 +600,7 @@
     ]
   },
   "scripts": {
-    "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=out/extension.js --sourcemap && esbuild test/spike.ts test/diag.ts test/m1.ts test/m2.ts test/weave.ts test/fresh.ts test/provider.ts test/bench.ts test/probe.ts test/assess.ts test/rank.ts test/select.ts test/signin.ts test/installed.ts test/run.ts --bundle --platform=node --format=cjs --external:vscode --outdir=out/test && esbuild tools/swebench_grep.ts --bundle --platform=node --format=cjs --outdir=out/tools",
+    "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=out/extension.js --sourcemap && esbuild test/spike.ts test/diag.ts test/m1.ts test/m2.ts test/weave.ts test/fresh.ts test/provider.ts test/bench.ts test/probe.ts test/assess.ts test/rank.ts test/select.ts test/signin.ts test/installed.ts test/run.ts test/hub.ts test/mcp.ts --bundle --platform=node --format=cjs --external:vscode --outdir=out/test && esbuild tools/swebench_grep.ts --bundle --platform=node --format=cjs --outdir=out/tools",
     "sync-engine": "scripts/sync-engine.sh",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "installed": "scripts/run-installed.sh",

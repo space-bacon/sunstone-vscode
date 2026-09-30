@@ -109,11 +109,11 @@ export class LocalServer implements vscode.Disposable {
     return this.key = k;
   }
 
-  async start(): Promise<{ url: string; key: string; models: LocalModel[] }> {
+  async start(opts: { allowEmpty?: boolean } = {}): Promise<{ url: string; key: string; models: LocalModel[] }> {
     const bin = this.binary;
     if (!bin) throw new Error("llama-server was not found. Install llama.cpp (macOS: brew install llama.cpp) or set sunstone.local.llamaServer to the binary.");
     const models = this.scan();
-    if (!models.length) throw new Error(`no .gguf files under ${this.dirs.join(", ") || "the model directories"}; set sunstone.local.modelDirs.`);
+    if (!models.length && !opts.allowEmpty) throw new Error(`no .gguf files under ${this.dirs.join(", ") || "the model directories"}; set sunstone.local.modelDirs.`);
     // Something already answering on the port is left alone and used as is.
     const already = await probe(this.url, await this.getKey(), 1500);
     if (already.up) { this.startedAt = this.startedAt || Date.now(); return { url: this.url, key: this.key, models }; }
@@ -121,6 +121,8 @@ export class LocalServer implements vscode.Disposable {
     const key = await this.getKey();
     const args = ["--models-preset", preset, "--models-max", "1", "--host", "127.0.0.1", "--port", String(this.port), "--api-key", key, "--no-webui"];
     this.out.appendLine(`${bin} ${args.map((a) => a === key ? "<key>" : a).join(" ")}`);
+    // Models fetched from the Hub (POST /models, a Hugging Face link) land here and the router lists them beside the
+    // preset; llama.cpp's own cache stays out, so not everything it ever fetched appears in the picker.
     const child = spawn(bin, args, { stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, LLAMA_CACHE: path.join(this.context.globalStorageUri.fsPath, "llama-cache-empty") } });
     this.child = child; this.startedAt = Date.now();
     child.stdout?.on("data", (d) => this.out.append(String(d)));

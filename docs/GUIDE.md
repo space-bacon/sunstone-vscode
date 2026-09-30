@@ -57,6 +57,21 @@ ordinary search and are never saved.
 There is also a chat participant, **@blackwindow**, which answers from the woven folders with
 citations.
 
+### Other MCP clients
+
+**Sunstone: Serve the Weave to MCP Clients** lets an agent outside VS Code, such as Claude Code, Cursor or
+Claude Desktop on the same machine, search this window's weave. It offers three of the tools, `#weave`, `#lookup`
+and `#remember`, under their tool names (`blackwindow_weave_search`, `blackwindow_lookup`,
+`blackwindow_remember`), and they answer exactly as they do here, because they are the same tools.
+
+The command copies a client configuration to the clipboard. It runs `node` on a small bridge script Sunstone
+writes to its storage, pointed at this window's socket, and it holds no key: the socket sits in a directory only
+your user can open, and that is the access control. Paste it under `mcpServers` in the client's configuration,
+or take **Copy the Claude Code Command** from the notification for a `claude mcp add` line. The window has to be
+open for the client to connect; the socket is named by the workspace, so a client configured once finds the same
+window after a restart. Serving stays on across restarts until **Sunstone: Stop Serving the Weave to MCP
+Clients**. It needs a Unix socket, so it is not available on Windows yet.
+
 ---
 
 ## Your own servers in the model picker
@@ -75,6 +90,15 @@ It binds to `127.0.0.1` on `sunstone.local.port` (8083) and is keyed. `sunstone.
 context window; each model gets what memory allows after its weights.
 
 Stop it with **Sunstone: Stop llama-server**.
+
+### A model from Hugging Face
+
+A link of the form `vscode://sunstonenorth.sunstone/hf?model=<repo>&file=<file.gguf>` opens in Sunstone:
+after you confirm, the llama-server on this machine fetches that GGUF from Hugging Face itself and the model
+joins the chat model picker, as "<model> · local". It loads on first use. The server starts if it was not
+running, even with no model on disk yet. The file is fetched into Sunstone's storage rather than into your
+model folders, and `file` only chooses the quant: `...-Q4_K_M.gguf` fetches `<repo>:Q4_K_M`, and a link
+without it takes llama.cpp's default. A repository that needs a login on the Hub cannot be fetched this way.
 
 ### A box elsewhere
 
@@ -151,6 +175,7 @@ your own results puts the answers in the store the run is meant to be testing.
 | `sunstone.local.port` | `8083` | Port for the local `llama-server`. |
 | `sunstone.local.ctx` | `32768` | Largest context window a local model may take. |
 | `sunstone.digestModel` | `""` | Model the digest tool uses. Empty picks a custom endpoint if there is one. |
+| `sunstone.mcp.serve` | `false` | Serve each window's weave to MCP clients outside VS Code. Set by **Sunstone: Serve the Weave to MCP Clients**. |
 
 ---
 
@@ -177,7 +202,8 @@ The **Black Window** output channel carries the detail for all of the above.
 ## What leaves your machine
 
 The index, the passages and the text stay local. The standalone page and the local server bind to
-`127.0.0.1`. The extension host contains no non-loopback URL.
+`127.0.0.1`. The MCP endpoint, when you turn it on, is a Unix socket in a directory only your user can
+open, not a port. The extension host contains no non-loopback URL.
 
 Two deliberate exceptions, both of which you invoke by name:
 

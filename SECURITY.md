@@ -38,6 +38,18 @@ all require, so it cannot be replaced with a webview resource scheme.
 
 If you can reach that server from another machine, or drive it without the token, report it.
 
+## The MCP socket
+
+**Sunstone: Serve the Weave to MCP Clients** serves three tools (`blackwindow_weave_search`,
+`blackwindow_lookup`, `blackwindow_remember`) to MCP clients on this machine over a Unix socket. The socket is
+created mode 0600 inside `sunstone-mcp-<uid>` under `$XDG_RUNTIME_DIR` or the temporary directory, which is
+created mode 0700, and the extension refuses to serve if that directory belongs to another user or is readable
+by anyone else. There is no key because the filesystem is the access control. It is off until you run the
+command, and it does not exist on Windows.
+
+If another user on the machine can connect to the socket, or a process can reach the tools without opening it,
+report it.
+
 ## Shell execution
 
 The assessment commands run shell commands in the workspace folder, against an allowlist, with

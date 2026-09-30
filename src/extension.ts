@@ -6,8 +6,10 @@ import { Places, PlaceWithKey, parsePairing, autoName } from "./places";
 import { LocalServer } from "./local";
 import { PlacesTree, Node, tileId } from "./tree";
 import { addModel } from "./probe";
+import { parseHubUri } from "./hub";
 import { Weave } from "./weave";
 import { registerChat } from "./chat";
+import { McpEndpoint } from "./mcp";
 import { BlackWindowProvider } from "./provider";
 import { registerAssess } from "./assess";
 import { registerGenerate } from "./generate";
@@ -28,6 +30,8 @@ export interface SunstoneApi {
   ask(text: string, timeoutMs?: number): Promise<{ reply: string; [k: string]: any }>;
   pick(id: string, timeoutMs?: number): Promise<void>;
   waitReady(timeoutMs?: number): Promise<string>;
+  openFromHub(uri: vscode.Uri, confirm?: boolean): Promise<string | undefined>;
+  mcp: McpEndpoint;
   events: PageEvent[];
   lastReply: () => string;
 }
@@ -45,6 +49,28 @@ export function activate(context: vscode.ExtensionContext): SunstoneApi {
   const weave = new Weave(server, context, out);
   context.subscriptions.push(vscode.window.registerWebviewViewProvider("sunstone.weave", weave, { webviewOptions: { retainContextWhenHidden: true } }));
   registerChat(context, weave, out);
+  // The same tools for MCP clients outside VS Code, over a socket only this user can open (src/mcp.ts).
+  const mcp = new McpEndpoint(context, out);
+  context.subscriptions.push(mcp);
+  const mcpCfg = () => vscode.workspace.getConfiguration("sunstone.mcp");
+  if (mcpCfg().get<boolean>("serve")) mcp.start().catch((e) => out.appendLine(`[mcp] not serving: ${e.message || e}`));
+  const shellQuote = (s: string) => (/^[\w@%+=:,./-]+$/.test(s) ? s : `'${s.replace(/'/g, `'\\''`)}'`);
+  context.subscriptions.push(
+    vscode.commands.registerCommand("sunstone.serveMcp", async () => {
+      try { await mcp.start(); } catch (e: any) { vscode.window.showErrorMessage(`Sunstone: ${e.message || e}`); return; }
+      if (!mcpCfg().get<boolean>("serve")) await mcpCfg().update("serve", true, vscode.ConfigurationTarget.Global);
+      const entry = mcp.config();
+      await vscode.env.clipboard.writeText(JSON.stringify({ mcpServers: { "black-window": entry } }, null, 2));
+      const pick = await vscode.window.showInformationMessage("Sunstone is serving this window's weave to MCP clients, and it keeps serving after a restart until you stop it. A client configuration is on the clipboard: it runs node on Sunstone's bridge with this window's socket, and holds no key.", "Copy the Claude Code Command", "Stop");
+      if (pick === "Copy the Claude Code Command") await vscode.env.clipboard.writeText(`claude mcp add black-window -- ${[entry.command, ...entry.args].map(shellQuote).join(" ")}`);
+      else if (pick === "Stop") await vscode.commands.executeCommand("sunstone.stopMcp");
+    }),
+    vscode.commands.registerCommand("sunstone.stopMcp", async () => {
+      mcp.stop();
+      await mcpCfg().update("serve", false, vscode.ConfigurationTarget.Global);
+      vscode.window.showInformationMessage("Sunstone stopped serving the weave to MCP clients.");
+    }),
+  );
   // "Black Window" in the chat model picker: every place's models, keyed from the secret store.
   const provider = new BlackWindowProvider(places, out, weave);
   context.subscriptions.push(vscode.lm.registerLanguageModelChatProvider("blackwindow", provider));
@@ -131,6 +157,36 @@ export function activate(context: vscode.ExtensionContext): SunstoneApi {
     if (!known.some((x) => x.url === p.url)) await host.bw("pair", [p.url, p.name, key || (await places.key(p.url))], 30_000);
   };
   const waitTile = async (id: string, ms = 60_000) => { const t0 = Date.now(); for (;;) { const tiles = await host.bw<{ id: string }[]>("tiles", [], 10_000).catch(() => []); if (tiles.some((t) => t.id === id)) return true; if (Date.now() - t0 > ms) return false; await new Promise((r) => setTimeout(r, 1000)); } };
+
+  // Hugging Face's "Use this model" button: the local router fetches the GGUF itself, from an empty start if need be,
+  // and the model joins the chat picker. A link from a web page downloads nothing until the modal is answered.
+  const openFromHub = async (uri: vscode.Uri, confirm = true): Promise<string | undefined> => {
+    const req = parseHubUri(uri);
+    if (confirm) {
+      const go = await vscode.window.showInformationMessage(`Download ${req.spec} from Hugging Face and serve it on this machine?`,
+        { modal: true, detail: "llama-server fetches the GGUF into Sunstone's storage and serves it on 127.0.0.1 with a key. It then appears in the chat model picker." }, "Download");
+      if (go !== "Download") return undefined;
+    }
+    const r = await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: "Sunstone: starting llama-server" }, () => local.start({ allowEmpty: true }));
+    // Saved every time, under its existing name: a place whose stored key has gone stale answers 401 and drops its models.
+    const place = await places.add({ name: places.list().find((p) => p.url === r.url)?.name || "local", url: r.url, key: r.key });
+    tree.refresh();
+    const held: any[] = await fetch(`${r.url}/models`, { headers: { authorization: `Bearer ${r.key}` }, signal: AbortSignal.timeout(20_000) })
+      .then((x) => x.json()).then((j: any) => j?.data || []).catch(() => []);
+    let id = held.map((m) => String(m.id)).find((m) => m.toLowerCase() === req.spec.toLowerCase());
+    if (!id) id = await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: `Sunstone: ${req.spec} downloading to this machine`, cancellable: true },
+      (progress, ct) => addModel(r.url, r.key, req.spec, (m) => progress.report({ message: m }), () => ct.isCancellationRequested));
+    provider.refresh(); tree.refresh();
+    if (confirm) void vscode.window.showInformationMessage(`${id} is on this machine. Pick "${id.split("/").pop()} \u00b7 ${place.name}" in the chat model picker; it loads on first use.`, "Open Chat")
+      .then((c) => { if (c === "Open Chat") void vscode.commands.executeCommand("workbench.action.chat.open"); });
+    return id;
+  };
+  context.subscriptions.push(vscode.window.registerUriHandler({
+    handleUri: (uri) => {
+      if (uri.path.replace(/\/+$/, "") !== "/hf") return void vscode.window.showErrorMessage(`Sunstone: no handler for ${uri.path}`);
+      openFromHub(uri).catch((e) => vscode.window.showErrorMessage(`Sunstone: ${e.message || e}`));
+    },
+  }));
 
   context.subscriptions.push(
     vscode.commands.registerCommand("sunstone.openChat", open),
@@ -313,7 +369,7 @@ export function activate(context: vscode.ExtensionContext): SunstoneApi {
     }),
   );
 
-  return { host, weave, places, local, tree, provider, open, ask, pick, waitReady: (ms) => waitReady(host, ms), events, lastReply: () => lastReply };
+  return { host, weave, places, local, tree, provider, open, ask, pick, waitReady: (ms) => waitReady(host, ms), openFromHub, mcp, events, lastReply: () => lastReply };
 }
 
 export async function waitTiles(host: Host, ms: number, alive: () => boolean = () => true): Promise<{ id: string; name: string; tag: string; why: string }[]> {

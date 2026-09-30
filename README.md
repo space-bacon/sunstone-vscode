@@ -28,10 +28,17 @@ Before each search, whatever changed since it was indexed is read again: a save,
 a write from a terminal or a patch tool, a deleted or renamed directory, a branch switch. Paths the
 folder walk excludes stay excluded when they are written later.
 
+**The same memory for agents outside the editor.** **Sunstone: Serve the Weave to MCP Clients** lets
+Claude Code, Cursor or any MCP client on this machine call `#weave`, `#lookup` and `#remember` against
+this window's weave, through a Unix socket only your user can open. There is no port and no key, and
+the command copies the client configuration.
+
 **Your own servers in the model picker.** Anything serving the OpenAI-compatible API appears beside
 the hosted models: `llama.cpp`, vLLM, or a router in front of several. Tool calling is enabled for
 all of them, and image input where the model has it. Start a local `llama-server` from the sidebar,
-or paste the pairing line from a box you already run.
+or paste the pairing line from a box you already run. A Hugging Face link,
+`vscode://sunstonenorth.sunstone/hf?model=<repo>&file=<file.gguf>`, has that local server fetch the GGUF
+and puts the model in the picker, after you confirm.
 
 A context window too small for the conversation is folded rather than hit. The older turns and the
 longest tool results move into the index and come back when they are the closest match to the
@@ -88,7 +95,8 @@ every command, every setting with its default, and what to do when a part misbeh
 
 ![What leaves your machine: nothing, and you can check](https://sunstonenorth.com/gallery/sunstone-6.png)
 
-The index, the passages and the text stay local. The page server binds to `127.0.0.1`. A place's key
+The index, the passages and the text stay local. The page server binds to `127.0.0.1`, and the MCP
+endpoint, when you turn it on, is a Unix socket only your user can open. A place's key
 lives in the editor's `SecretStorage` under `sunstone.key:<url>`, never in `settings.json`.
 
 Two things do leave, and you invoke both by name. `#lookup` fetches from Wikipedia or a news source,

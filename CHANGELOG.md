@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.1.8
+
+Agents outside VS Code can search a window's weave. **Sunstone: Serve the Weave to MCP Clients** serves three of
+the tools, `blackwindow_weave_search`, `blackwindow_lookup` and `blackwindow_remember`, to MCP clients such as
+Claude Code and Cursor, and copies their configuration. A client launches a small bridge that Sunstone writes to
+its storage, and the bridge joins the client to the window over a Unix socket in a directory only this user can
+open, so there is no port and no key. The tools are the ones VS Code's chat calls, run through the editor's own
+tool API. In the acceptance test, the reference MCP SDK's client (1.31.0) listed the three tools through the
+bridge, and its search for "where is a pairing line parsed into url, key and name" put `src/places.ts` first in
+0.016 s. Not available on Windows.
+
+## 0.1.7
+
+Sunstone opens Hugging Face model links: `vscode://sunstonenorth.sunstone/hf?model=<repo>&file=<file.gguf>` asks
+first, then has the llama-server on this machine fetch that GGUF from the Hub and puts it in the chat model picker. The
+server now starts with no model on disk when a link asks it to. From a machine with no GGUF, the test fetched
+`ggml-org/gemma-3-270m-it-GGUF:Q8_0` (288 MB) in 8.8 s, answered a chat turn through it and found it in the picker; the
+same link a second time fetched nothing.
+
 ## 0.1.6
 
 The weave tool's search no longer adds a lexical bonus to its candidates; it sorts the head of the list on the raw
