@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.9
+
+`#lookup` with `where: web` works. Until 2026-10-01 blackwindow.xyz sent no CORS header, and Sunstone's page runs on a
+loopback origin, so the browser refused the page every web search and every read through the site's reader; only
+Wikipedia and the news desk answered. The site now answers CORS to loopback origins, which fixed the search for every
+installed package. The reader, which fetches a page whose own site refuses a cross-origin read, now goes to the site as
+well (engine blackwidow `dda37fd`); 0.1.8 sent it to its own loopback origin, which answers 404. The acceptance test
+runs both: "Santa Justa lift opening hours" returned 4 web passages and read the top page in 1.81 s, and with every
+other site made to refuse the page, the top result for "Ponte 25 de Abril bridge length" came through the reader.
+
 ## 0.1.8
 
 Agents outside VS Code can search a window's weave. **Sunstone: Serve the Weave to MCP Clients** serves three of
