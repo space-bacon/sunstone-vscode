@@ -2,7 +2,7 @@
   "name": "sunstone",
   "displayName": "Sunstone: Codebase Search for Copilot",
   "description": "Your coding agent has your files but cannot find them. Sunstone indexes the folders you open and gives any model in the picker, Copilot's included, a proper way to search them. Your own servers can join the picker too.",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "publisher": "sunstonenorth",
   "author": "Sunstone North Lab LLC",
   "license": "SEE LICENSE IN LICENSE",
@@ -574,6 +574,11 @@
             "description": "Read a file whole into notes (path, or the active file)"
           }
         ]
+      }
+    ],
+    "chatAgents": [
+      {
+        "path": "./agents/weave.agent.md"
       }
     ],
     "languageModelChatProviders": [

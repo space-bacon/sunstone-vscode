@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.1.10
+
+Sunstone ships a custom agent, **Weave**, in the package. It had existed only as a file in a user's own prompts
+folder, which VS Code keeps per profile and does not pass on to a local agent host such as a Copilot CLI session, so
+it was missing from the picker wherever that file was not. The package now carries `agents/weave.agent.md` and
+declares it under `contributes.chatAgents`, which VS Code 1.106 and later register for as long as the extension is
+enabled; earlier editors ignore the declaration and the extension runs as before. The agent is the 1,944 bytes the
+file held (sha256 `749343bd`), so its instructions are unchanged. If you kept a copy in your own prompts folder,
+delete it, or it appears beside this one.
+
+`npm run installed` now checks the declaration, the packaged file and VS Code's own registration of it. In one
+clean-profile run on VS Code 1.140.0 against each package, the one built from this tree registered one agent for
+the extension and the published 0.1.9 package registered none. On VS Code 1.104.0, the engine floor, the new
+package passed every other check in the same run, and its registration check was skipped because that build has no
+command that lists contributions. `scripts/check-vsix.sh` fails a package that does not declare
+`agents/weave.agent.md`, that declares a file it lacks, or that carries an `agents/` file it was not told about. The
+assessment harness reads the packaged agent instead of a copy in the prompts folder.
+
 ## 0.1.9
 
 `#lookup` with `where: web` works. Until 2026-10-01 blackwindow.xyz sent no CORS header, and Sunstone's page runs on a

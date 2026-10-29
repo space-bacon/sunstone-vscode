@@ -170,6 +170,10 @@ it in one sentence. Do not announce that something is important; state it.
 
 Pick that agent with a Black Window model in the picker and the whole loop runs on our stack.
 
+Sunstone also ships an agent of its own, **Weave** (`agents/weave.agent.md` in the package, declared under
+`contributes.chatAgents`). It has the same habits and pins neither the tools nor the model, so the file above is for
+a team that wants the tool list fixed.
+
 ## 5. What to build next, in order of leverage
 
 1. **`-np 1` in the box preset** for agent boxes: one line, recovers the prompt cache on every turn.

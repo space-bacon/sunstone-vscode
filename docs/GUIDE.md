@@ -57,6 +57,18 @@ ordinary search and are never saved.
 There is also a chat participant, **@blackwindow**, which answers from the woven folders with
 citations.
 
+### The Weave agent
+
+Sunstone ships a custom agent, **Weave**, and VS Code 1.106 or later lists it in the chat's agent picker
+beside the built-in agents and your own. It tells the model to search the weave before it greps, to
+`#digest` a long file rather than read it into the window, to cite `[n]` for what it took from a passage or a
+lookup, and to `#remember` what you settle. It works with any model in the picker and does not restrict the
+model's tools.
+
+The agent is declared in the package under `contributes.chatAgents`, so it is there whenever Sunstone is
+enabled and does not depend on a file in your prompts folder. If you kept a copy there, delete it, or it will
+appear beside this one.
+
 ### Other MCP clients
 
 **Sunstone: Serve the Weave to MCP Clients** lets an agent outside VS Code, such as Claude Code, Cursor or

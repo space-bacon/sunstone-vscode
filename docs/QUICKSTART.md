@@ -83,6 +83,9 @@ read (vectors included), so a start is not a re-index. **Black Window: Forget a 
   otherwise.
 - **`@blackwindow`**: the house voice. Searches the weave first, cites `[n]`, attaches the source files. `/lookup` and
   `/news` read and cite; `/digest <path>` reads a file whole into ordered notes; `/weave` indexes.
+- **The Weave agent**: ships in the package and shows in the chat's agent picker (VS Code 1.106 or later). Any model
+  run under it searches the weave before it greps, digests a long file rather than reading it whole, cites `[n]` and
+  remembers what you settle.
 - **Black Window: Search the Weave**: a quick pick over passages that opens the file.
 - **Ask About the Selection** (`cmd+alt+b`) and **Insert the Last Reply** work with the standalone page.
 

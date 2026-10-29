@@ -12,8 +12,8 @@ Everything is indexed and held on your machine. There is no account and no key t
 
 ## What it does
 
-**Five tools and a participant, in the chat you already have.** Once you weave a folder, these are
-offered to every model in the picker, including the hosted ones.
+**Five tools, a participant and an agent, in the chat you already have.** Once you weave a folder,
+these are offered to every model in the picker, including the hosted ones.
 
 | | |
 | --- | --- |
@@ -23,6 +23,7 @@ offered to every model in the picker, including the hosted ones.
 | `#remember` | Keeps a decision across chats, so you stop re-explaining it. |
 | `#weaveFolder` | Indexes another folder without leaving the conversation. |
 | `@blackwindow` | A chat participant that answers straight out of your folders, with citations. |
+| **Weave** | A custom agent in the chat's agent picker. It searches the weave before it greps, reads a long file as notes, cites the passages it used and remembers what you settle. It ships in the package, so it is there whenever Sunstone is, with any model. |
 
 Before each search, whatever changed since it was indexed is read again: a save, an unsaved buffer,
 a write from a terminal or a patch tool, a deleted or renamed directory, a branch switch. Paths the
@@ -82,7 +83,8 @@ the same machine, since it runs from a half-precision file.
 2. **Weave a folder.** Nothing is indexed until you ask. Right-click a folder in the Explorer and
    choose **Black Window: Weave This Folder**, or use the command palette. The status bar shows a
    passage count once it is done.
-3. Use `#weave` in agent mode with any model, or `@blackwindow` for answers with citations.
+3. Use `#weave` in agent mode with any model, pick the **Weave** agent to have the model search the weave
+   first, or use `@blackwindow` for answers with citations.
 
 To run your own model, add a place: **Sunstone: Start llama-server on This Machine**, or
 **Sunstone: Add a Place** and paste a pairing line.

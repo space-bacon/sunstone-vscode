@@ -234,7 +234,10 @@ export function preamble(roots: string[], withRules: boolean, only?: string[], a
       parts.push(fs.readFileSync(p, "utf8"));
     }
   }
-  const agentFile = agentFrom === false ? "" : (agentFrom || process.env.SUNSTONE_AGENT || path.join(process.env.HOME || "", "Library/Application Support/Code/User/prompts/weave.agent.md"));
+  // The agent the package ships (contributes.chatAgents), not a copy in someone's prompts folder. An arm labelled
+  // "agent" that quietly ran without the file would measure something else, and `agent` in the artifact would
+  // read "none" for it.
+  const agentFile = agentFrom === false ? "" : (agentFrom || process.env.SUNSTONE_AGENT || path.join(__dirname, "..", "agents", "weave.agent.md"));
   const agent = agentFile && fs.existsSync(agentFile) ? fs.readFileSync(agentFile, "utf8").replace(/^---[\s\S]*?---\s*/, "") : "";
   const where = roots.length
     ? `\n\nThe folders open here are:\n${roots.map((r) => `  ${path.basename(r)}  at ${r}`).join("\n")}`
