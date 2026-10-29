@@ -600,7 +600,7 @@
     ]
   },
   "scripts": {
-    "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=out/extension.js --sourcemap && esbuild test/spike.ts test/diag.ts test/m1.ts test/m2.ts test/weave.ts test/fresh.ts test/provider.ts test/bench.ts test/probe.ts test/assess.ts test/rank.ts test/select.ts test/signin.ts test/installed.ts test/run.ts test/hub.ts test/mcp.ts --bundle --platform=node --format=cjs --external:vscode --outdir=out/test && esbuild tools/swebench_grep.ts --bundle --platform=node --format=cjs --outdir=out/tools",
+    "build": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=out/extension.js --sourcemap && ([ ! -d test ] || (esbuild test/spike.ts test/diag.ts test/m1.ts test/m2.ts test/weave.ts test/fresh.ts test/provider.ts test/bench.ts test/probe.ts test/assess.ts test/rank.ts test/select.ts test/signin.ts test/installed.ts test/run.ts test/hub.ts test/mcp.ts --bundle --platform=node --format=cjs --external:vscode --outdir=out/test && esbuild tools/swebench_grep.ts --bundle --platform=node --format=cjs --outdir=out/tools))",
     "sync-engine": "scripts/sync-engine.sh",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "installed": "scripts/run-installed.sh",
@@ -622,5 +622,8 @@
     "@vscode/vsce": "^3.9.2",
     "esbuild": "^0.28.2",
     "typescript": "^5.6.0"
+  },
+  "overrides": {
+    "@azure/msal-node": "^7.1.2"
   }
 }
